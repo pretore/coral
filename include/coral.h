@@ -32,7 +32,7 @@ void coral_required_true(int check);
 
 /**
  * @brief Comparison function for sorting void* data.
- * @param [in] a min void* to compare.
+ * @param [in] a first void* to compare.
  * @param [in] b second void* to compare.
  * @return <i>-1</i> if <b>a</b> is <u>less than</u> <b>b</b>,
  * <i>0</i> if <b>a</b> is <u>equal to</u> <b>b</b> or <i>1</i> if <b>a</b> is
@@ -42,7 +42,7 @@ int coral_compare_void_ptr(const void *a, const void *b);
 
 /**
  * @brief Comparison function for sorting size_t data.
- * @param [in] a min size_t to compare.
+ * @param [in] a first size_t to compare.
  * @param [in] b second size_t to compare.
  * @return <i>-1</i> if <b>a</b> is <u>less than</u> <b>b</b>,
  * <i>0</i> if <b>a</b> is <u>equal to</u> <b>b</b> or <i>1</i> if <b>a</b> is
@@ -51,42 +51,87 @@ int coral_compare_void_ptr(const void *a, const void *b);
 int coral_compare_size_t(const void *a, const void *b);
 
 /**
- * @brief Add two size_t together and check for overflow.
- * @param [in] a min size_t.
- * @param [in] b second size_t.
+ * @brief Add two size_t values together and check for overflow.
+ * @param [in] a first unsigned size_t.
+ * @param [in] b second unsigned size_t.
  * @param [out] out where the result is stored if successful.
  * @return On success true otherwise false if an error occurred.
- * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if the out argument is
- * <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if the out argument is <i>NULL</i>.
  * @throws CORAL_ERROR_OVERFLOW_OCCURRED if an integer overflow has occurred.
  */
 bool coral_add_size_t(size_t a, size_t b, size_t *out);
 
 /**
- * @brief Multiply two size_ts and check for overflow.
- * @param [in] a min integer.
- * @param [in] b second integer.
+ * @brief Multiply two size_t values and check for overflow.
+ * @param [in] a first unsigned integer.
+ * @param [in] b second unsigned integer.
  * @param [out] out where the result is stored if successful.
  * @return On success true otherwise false if an error occurred.
- * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if the out argument is
- * <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if the out argument is <i>NULL</i>.
  * @throws CORAL_ERROR_OVERFLOW_OCCURRED if an integer overflow has occurred.
  */
 bool coral_multiply_size_t(size_t a, size_t b, size_t *out);
 
+/**
+ * @brief Return the minimum size_t value.
+ * @param [in] a first unsigned integer.
+ * @param [in] b second unsigned integer.
+ * @param [out] out where the result is stored ir successful.
+ * @return On success true otherwise false if an error occurred.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if the out argument is <i>NULL</i>.
+ */
 bool coral_minimum_size_t(size_t a, size_t b, size_t *out);
 
+/**
+ * @brief Return the maximum size_t value.
+ * @param [in] a first unsigned integer.
+ * @param [in] b second unsigned integer.
+ * @param [out] out where the result is stored if successful.
+ * @return On success true otherwise false if an error occurred.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if the out argument is <i>NULL</i>.
+ */
 bool coral_maximum_size_t(size_t a, size_t b, size_t *out);
 
+/**
+ * @brief Create and set a reference.
+ * @param [out] out where the result is stored if successful.
+ * @param [in] object instance on which we would like a reference.
+ * @return On success true otherwise false if an error occurred.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if either out or object is
+ * <i>NULL</i>.
+ */
 bool coral_set_ref(struct coral_ref **out, void *object);
 
+/**
+ * @brief Clear previously set reference.
+ * @param [in] ref where we previously set the reference and now wish to clear.
+ * @return On success true otherwise false if an error occurred.
+ * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
+ * (being) destroyed.
+ */
 bool coral_clear_ref(struct coral_ref **ref);
 
+/**
+ * @brief Create and set a weak reference.
+ * @param [out] out where the result is stored if successful.
+ * @param [in] object instance on which we would like a weak reference.
+ * @return On success true otherwise false if an error occurred.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if either out or object is
+ * <i>NULL</i>.
+ */
 bool coral_set_weak_ref(struct coral_weak_ref **out, void *object);
 
+/**
+ * @brief Clear previously set weak reference.
+ * @param [in] ref where we previously set the weak reference and now wish to
+ * clear.
+ * @return On success true otherwise false if an error occurred.
+ * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
+ * (being) destroyed.
+ */
 bool coral_clear_weak_ref(struct coral_weak_ref **ref);
 
-/**s
+/**
  * @brief Exponentially puts the current thread to sleep.
  * <p>Puts the current thread asleep for the duration calculated in microseconds
  * from the exponential function and given state. The lesser between 999999 and

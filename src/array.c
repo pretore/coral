@@ -193,7 +193,6 @@ bool coral$array_set_count(struct coral_array *object,
             object->on_remove(item);
         }
     }
-    // TODO: if increasing capacity, clear new items ...
     if (object->capacity < args->count) {
         size_t capacity_;
         struct coral_range *capacity_range;
@@ -354,6 +353,7 @@ bool coral$array_insert(struct coral_array *object,
         object->count -= 1;
         memmove(src, dst, n);
     }
+    // TODO: on_insert callback needs to be called
     return result;
 }
 

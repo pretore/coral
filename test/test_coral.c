@@ -3,38 +3,53 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include <coral.h>
-#include <pthread.h>
 #include <limits.h>
 
 #include "private/coral.h"
 #include "test/cmocka.h"
 #include "test/wrap.h"
 
-static void add_size_t_error_on_argument_is_null(void **state) {
+static void check_compare_void_ptr(void **state) {
+    assert_int_equal(-1, coral_compare_void_ptr((void *) 1, (void *) 2));
+    assert_int_equal(0, coral_compare_void_ptr((void *) 1, (void *) 1));
+    assert_int_equal(1, coral_compare_void_ptr((void *) 3, (void *) 2));
+}
+
+static void check_compare_size_t_ptr(void **state) {
+    size_t A = 0;
+    size_t B = 1;
+    assert_int_equal(-1, coral_compare_size_t(&A, &B));
+    A = B;
+    assert_int_equal(0, coral_compare_size_t(&A, &B));
+    A += 1;
+    assert_int_equal(1, coral_compare_size_t(&A, &B));
+}
+
+static void check_add_size_t_error_on_argument_is_null(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral_add_size_t(0,0,NULL));
+    assert_false(coral_add_size_t(0, 0, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void add_size_t_with_minimum(void **state) {
-    coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
+static void check_add_size_t_with_minimum(void **state) {
+    coral_error = CORAL_ERROR_NONE;
     size_t result = 10;
     assert_true(coral_add_size_t(0, 0, &result));
-    assert_int_equal(CORAL_ERROR_OBJECT_UNAVAILABLE, coral_error);
+    assert_int_equal(CORAL_ERROR_NONE, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void add_size_t_with_maximum(void **state) {
-    coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
+static void check_add_size_t_with_maximum(void **state) {
+    coral_error = CORAL_ERROR_NONE;
     size_t result = 88;
     assert_true(coral_add_size_t(SIZE_MAX, 0, &result));
     assert_int_equal(SIZE_MAX, result);
-    assert_int_equal(CORAL_ERROR_OBJECT_UNAVAILABLE, coral_error);
+    assert_int_equal(CORAL_ERROR_NONE, coral_error);
     result = 100;
     assert_true(coral_add_size_t(0, SIZE_MAX, &result));
     assert_int_equal(SIZE_MAX, result);
-    assert_int_equal(CORAL_ERROR_OBJECT_UNAVAILABLE, coral_error);
+    assert_int_equal(CORAL_ERROR_NONE, coral_error);
     coral_error = CORAL_ERROR_NONE;
     result = 56;
     assert_false(coral_add_size_t(SIZE_MAX, SIZE_MAX, &result));
@@ -43,31 +58,31 @@ static void add_size_t_with_maximum(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void multiply_size_t_error_on_argument_is_null(void **state) {
+static void check_multiply_size_t_error_on_argument_is_null(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral_multiply_size_t(0,0,NULL));
+    assert_false(coral_multiply_size_t(0, 0, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void multiply_size_t_with_minimum(void **state) {
-    coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
+static void check_multiply_size_t_with_minimum(void **state) {
+    coral_error = CORAL_ERROR_NONE;
     size_t result = 100;
     assert_true(coral_multiply_size_t(SIZE_MAX, 0, &result));
     assert_int_equal(0, result);
-    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    assert_int_equal(CORAL_ERROR_NONE, coral_error);
     result = 88;
     assert_true(coral_multiply_size_t(0, SIZE_MAX, &result));
     assert_int_equal(0, result);
-    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    assert_int_equal(CORAL_ERROR_NONE, coral_error);
     result = 11;
     assert_true(coral_multiply_size_t(0, 0, &result));
     assert_int_equal(0, result);
-    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    assert_int_equal(CORAL_ERROR_NONE, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void multiply_size_t_with_maximum(void **state) {
+static void check_multiply_size_t_with_maximum(void **state) {
     coral_error = CORAL_ERROR_NONE;
     size_t result = 100;
     assert_false(coral_multiply_size_t(SIZE_MAX, SIZE_MAX, &result));
@@ -76,14 +91,152 @@ static void multiply_size_t_with_maximum(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void exponential_usleep_error_on_argument_ptr_is_null(void **state) {
+static void check_minimum_size_t_error_on_null_argument_ptr(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral_minimum_size_t(0, 1, NULL));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_minimum_size_t(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    size_t out;
+    assert_true(coral_minimum_size_t(1, 2, &out));
+    assert_int_equal(1, out);
+    assert_true(coral_minimum_size_t(5, 3, &out));
+    assert_int_equal(3, out);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_maximum_size_t_error_on_null_argument_ptr(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral_maximum_size_t(0, 1, NULL));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_maximum_size_t(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    size_t out;
+    assert_true(coral_maximum_size_t(1, 2, &out));
+    assert_int_equal(2, out);
+    assert_true(coral_maximum_size_t(5, 3, &out));
+    assert_int_equal(5, out);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_set_ref_error_on_null_argument_ptr(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_object *object;
+    assert_true(coral_object_alloc(0, (void **) &object));
+    assert_true(coral_object_init(object, NULL));
+    assert_false(coral_set_ref(NULL, object));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_ref *ref;
+    assert_false(coral_set_ref(&ref, NULL));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_set_ref(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_object *object;
+    assert_true(coral_object_alloc(0, (void **) &object));
+    assert_true(coral_object_init(object, NULL));
+    struct coral_ref *ref;
+    assert_true(coral_set_ref(&ref, object));
+    assert_true(coral_ref_release(ref));
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_clear_ref_error_on_uninitialized(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_ref *ref;
+    assert_true(coral_ref_alloc(&ref));
+    assert_false(coral_clear_ref(&ref));
+    assert_int_equal(CORAL_ERROR_OBJECT_IS_UNINITIALIZED, coral_error);
+    assert_true(coral_ref_destroy(ref));
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_clear_ref(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_true(coral_clear_ref(NULL));
+    struct coral_ref *ref = NULL;
+    assert_true(coral_clear_ref(&ref));
+    struct coral_object *object;
+    assert_true(coral_object_alloc(0, (void **) &object));
+    assert_true(coral_object_init(object, NULL));
+    assert_true(coral_set_ref(&ref, object));
+    assert_true(coral_clear_ref(&ref));
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_set_weak_ref_error_on_null_argument_ptr(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_object *object;
+    assert_true(coral_object_alloc(0, (void **) &object));
+    assert_true(coral_object_init(object, NULL));
+    assert_false(coral_set_weak_ref(NULL, object));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_weak_ref *ref;
+    assert_false(coral_set_weak_ref(&ref, NULL));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_set_weak_ref(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_object *object;
+    assert_true(coral_object_alloc(0, (void **) &object));
+    assert_true(coral_object_init(object, NULL));
+    struct coral_weak_ref *ref;
+    assert_true(coral_set_weak_ref(&ref, object));
+    assert_true(coral_weak_ref_release(ref));
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_clear_weak_ref_error_on_uninitialized(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_weak_ref *ref;
+    assert_true(coral_weak_ref_alloc(&ref));
+    assert_false(coral_clear_weak_ref(&ref));
+    assert_int_equal(CORAL_ERROR_OBJECT_IS_UNINITIALIZED, coral_error);
+    assert_true(coral_weak_ref_destroy(ref));
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_clear_weak_ref(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_true(coral_clear_weak_ref(NULL));
+    struct coral_weak_ref *ref = NULL;
+    assert_true(coral_clear_weak_ref(&ref));
+    struct coral_object *object;
+    assert_true(coral_object_alloc(0, (void **) &object));
+    assert_true(coral_object_init(object, NULL));
+    assert_true(coral_set_weak_ref(&ref, object));
+    assert_true(coral_clear_weak_ref(&ref));
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void
+check_exponential_usleep_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_exponential_usleep(NULL, 0));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void exponential_usleep_error_on_invalid_maximum_value(void **state) {
+static void
+check_exponential_usleep_error_on_invalid_maximum_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
     uint8_t state_ = 100;
     assert_false(coral_exponential_usleep(&state_, 0));
@@ -92,7 +245,8 @@ static void exponential_usleep_error_on_invalid_maximum_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void exponential_usleep_error_on_invalid_state_value(void **state) {
+static void
+check_exponential_usleep_error_on_invalid_state_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
     uint8_t state_ = UINT8_MAX;
     assert_false(coral_exponential_usleep(&state_, 999999));
@@ -101,7 +255,8 @@ static void exponential_usleep_error_on_invalid_state_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void exponential_usleep_error_on_boundary_state_value(void **state) {
+static void
+check_exponential_usleep_error_on_boundary_state_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
     uint8_t state_ = CHAR_BIT * sizeof(unsigned int) - 1;
     assert_false(coral_exponential_usleep(&state_, 999999));
@@ -110,7 +265,8 @@ static void exponential_usleep_error_on_boundary_state_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void exponential_usleep_error_on_failed_syscall(void **state) {
+static void
+check_exponential_usleep_error_on_failed_syscall(void **state) {
     coral_error = CORAL_ERROR_NONE;
     nanosleep_is_overridden = true;
     will_return(__wrap_nanosleep, -1);
@@ -122,30 +278,14 @@ static void exponential_usleep_error_on_failed_syscall(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void exponential_usleep_success(void **state) {
+static void check_exponential_usleep_success(void **state) {
     coral_error = CORAL_ERROR_NONE;
     uint8_t state_ = 0;
     for (uint8_t i = 0; CORAL_ERROR_NONE == coral_error && i < 10;
-        i++, assert_true(coral_exponential_usleep(&state_, 999999)));
+         i++, assert_true(coral_exponential_usleep(&state_, 999999)));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
     assert_int_equal(10, state_);
     coral_error = CORAL_ERROR_NONE;
-}
-
-static void check_cmp_void_ptr(void **state) {
-    const void *values[] = {(const void *) 1, (const void *) 2};
-    assert_int_equal(-1, coral$cmp_void_ptr(values[0], values[1]));
-    assert_int_equal(0, coral$cmp_void_ptr(values[0], values[0]));
-    assert_int_equal(0, coral$cmp_void_ptr(values[1], values[1]));
-    assert_int_equal(1, coral$cmp_void_ptr(values[1], values[0]));
-}
-
-static void check_cmp_size_t(void **state) {
-    const size_t values[] = {1, 2};
-    assert_int_equal(-1, coral$cmp_size_t(&values[0], &values[1]));
-    assert_int_equal(0, coral$cmp_size_t(&values[0], &values[0]));
-    assert_int_equal(0, coral$cmp_size_t(&values[1], &values[1]));
-    assert_int_equal(1, coral$cmp_size_t(&values[1], &values[0]));
 }
 
 static void check_swap_void_ptr(void **state) {
@@ -160,18 +300,6 @@ static void check_swap_size_t(void **state) {
     coral$swap_size_t(&values[0], &values[1]);
     assert_int_equal(2, values[0]);
     assert_int_equal(1, values[1]);
-}
-
-static void check_min_size_t(void **state) {
-    const size_t values[] = {1, 2};
-    assert_int_equal(values[0], coral$min_size_t(values[0], values[1]));
-    assert_int_equal(values[0], coral$min_size_t(values[1], values[0]));
-}
-
-static void check_max_size_t(void **state) {
-    const size_t values[] = {1, 2};
-    assert_int_equal(values[1], coral$max_size_t(values[0], values[1]));
-    assert_int_equal(values[1], coral$max_size_t(values[1], values[0]));
 }
 
 static void check_atomic_load(void **state) {
@@ -220,6 +348,7 @@ static void check_retain(void **state) {
 
 static void object$destroy(void *object) {
     function_called();
+    free(object);
 }
 
 static void check_release(void **state) {
@@ -233,30 +362,40 @@ static void check_release(void **state) {
     /* should only decrease reference count */
     coral$release(obj, &obj->ref_counter, object$destroy);
     assert_int_equal(1, coral$atomic_load(&obj->ref_counter));
-    /* will call destroy and free object */
+    /* will call destroy which will free the object */
     coral$release(obj, &obj->ref_counter, object$destroy);
 }
 
 int main(int argc, char *argv[]) {
     const struct CMUnitTest tests[] = {
-            cmocka_unit_test(add_size_t_error_on_argument_is_null),
-            cmocka_unit_test(add_size_t_with_minimum),
-            cmocka_unit_test(add_size_t_with_maximum),
-            cmocka_unit_test(multiply_size_t_error_on_argument_is_null),
-            cmocka_unit_test(multiply_size_t_with_minimum),
-            cmocka_unit_test(multiply_size_t_with_maximum),
-            cmocka_unit_test(exponential_usleep_error_on_argument_ptr_is_null),
-            cmocka_unit_test(exponential_usleep_error_on_invalid_maximum_value),
-            cmocka_unit_test(exponential_usleep_error_on_invalid_state_value),
-            cmocka_unit_test(exponential_usleep_error_on_boundary_state_value),
-            cmocka_unit_test(exponential_usleep_error_on_failed_syscall),
-            cmocka_unit_test(exponential_usleep_success),
-            cmocka_unit_test(check_cmp_void_ptr),
-            cmocka_unit_test(check_cmp_size_t),
+            cmocka_unit_test(check_compare_void_ptr),
+            cmocka_unit_test(check_compare_size_t_ptr),
+            cmocka_unit_test(check_add_size_t_error_on_argument_is_null),
+            cmocka_unit_test(check_add_size_t_with_minimum),
+            cmocka_unit_test(check_add_size_t_with_maximum),
+            cmocka_unit_test(check_multiply_size_t_error_on_argument_is_null),
+            cmocka_unit_test(check_multiply_size_t_with_minimum),
+            cmocka_unit_test(check_multiply_size_t_with_maximum),
+            cmocka_unit_test(check_minimum_size_t_error_on_null_argument_ptr),
+            cmocka_unit_test(check_minimum_size_t),
+            cmocka_unit_test(check_maximum_size_t_error_on_null_argument_ptr),
+            cmocka_unit_test(check_maximum_size_t),
+            cmocka_unit_test(check_set_ref_error_on_null_argument_ptr),
+            cmocka_unit_test(check_set_ref),
+            cmocka_unit_test(check_clear_ref_error_on_uninitialized),
+            cmocka_unit_test(check_clear_ref),
+            cmocka_unit_test(check_set_weak_ref_error_on_null_argument_ptr),
+            cmocka_unit_test(check_set_weak_ref),
+            cmocka_unit_test(check_clear_weak_ref_error_on_uninitialized),
+            cmocka_unit_test(check_clear_weak_ref),
+            cmocka_unit_test(check_exponential_usleep_error_on_null_argument_ptr),
+            cmocka_unit_test(check_exponential_usleep_error_on_invalid_maximum_value),
+            cmocka_unit_test(check_exponential_usleep_error_on_invalid_state_value),
+            cmocka_unit_test(check_exponential_usleep_error_on_boundary_state_value),
+            cmocka_unit_test(check_exponential_usleep_error_on_failed_syscall),
+            cmocka_unit_test(check_exponential_usleep_success),
             cmocka_unit_test(check_swap_void_ptr),
             cmocka_unit_test(check_swap_size_t),
-            cmocka_unit_test(check_min_size_t),
-            cmocka_unit_test(check_max_size_t),
             cmocka_unit_test(check_atomic_load),
             cmocka_unit_test(check_atomic_store),
             cmocka_unit_test(check_atomic_compare_exchange),

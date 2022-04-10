@@ -190,7 +190,7 @@ bool coral_set_weak_ref(struct coral_weak_ref **out, void *object) {
 }
 
 bool coral_clear_weak_ref(struct coral_weak_ref **ref) {
-    if (ref) {
+    if (ref && *ref) {
         if (!coral_weak_ref_release(*ref)) {
             return false;
         }
