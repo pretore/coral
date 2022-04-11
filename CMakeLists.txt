@@ -22,7 +22,6 @@ set(EXPORTED_HEADER_FILES
         include/coral.h)
 set(SOURCES
         ${EXPORTED_HEADER_FILES}
-        src/test/cmocka.h
         src/private/array.h
         src/private/context.h
         src/private/coral.h
@@ -51,6 +50,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_sources(coral
             PRIVATE
                 ${SOURCES}
+                src/test/cmocka.h
                 src/test/wrap.c
                 src/test/wrap.h)
     target_link_libraries(coral PRIVATE ${CMOCKA_SHARED_LIBRARY})

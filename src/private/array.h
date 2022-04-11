@@ -15,7 +15,7 @@ struct coral_array {
     struct coral_ref *capacity_range_ref;
 
     void (*on_insert)(void *);
-    void (*on_remove)(void *);
+    void (*on_erase)(void *);
 };
 
 struct coral_array_item;
@@ -27,7 +27,7 @@ bool coral$array_init(struct coral_array *object,
                       size_t size,
                       struct coral_range *capacity_range,
                       void (*on_insert)(void *),
-                      void (*on_remove)(void *));
+                      void (*on_erase)(void *));
 
 void coral$array_destroy(struct coral_array *object);
 

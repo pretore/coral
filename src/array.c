@@ -109,14 +109,13 @@ bool coral$array_init(struct coral_array *object,
                       size_t size,
                       struct coral_range *capacity_range,
                       void (*on_insert)(void *),
-                      void (*on_remove)(void *)) {
+                      void (*on_erase)(void *)) {
     if (!capacity_range) {
         coral_required_true(coral_ref_get($capacity_range_ref,
                                           (void **) &capacity_range));
     }
     struct coral_range_values values;
     if (!coral_range_get(capacity_range, &values)
-        || values.first > count
         || values.last < count) {
         coral_error = CORAL_ERROR_INVALID_VALUE;
         return false;
@@ -144,7 +143,7 @@ bool coral$array_init(struct coral_array *object,
         return false;
     }
     object->on_insert = on_insert;
-    object->on_remove = on_remove;
+    object->on_erase = on_erase;
     object->size = size;
     object->count = count;
     object->capacity = capacity_;
@@ -185,12 +184,12 @@ bool coral$array_set_count(struct coral_array *object,
     if (object->count == args->count) {
         return true;
     }
-    if (object->on_remove) {
+    if (object->on_erase) {
         // TODO: check if this code works correctly...
         unsigned char *data = object->data;
         for (size_t i = args->count, limit = object->count; i <= limit; i++) {
             void *item = data + (object->size * i);
-            object->on_remove(item);
+            object->on_erase(item);
         }
     }
     if (object->capacity < args->count) {
@@ -416,7 +415,7 @@ void coral$array_on_insert_object(void *object) {
     coral_object_retain(object);
 }
 
-void coral$array_on_remove_object(void *object) {
+void coral$array_on_erase_object(void *object) {
     if (!object) {
         return;
     }
@@ -432,7 +431,7 @@ bool coral_array_of_objects(struct coral_array **out) {
                              sizeof(struct coral_object *),
                              NULL,
                              coral$array_on_insert_object,
-                             coral$array_on_remove_object)) {
+                             coral$array_on_erase_object)) {
             return true;
         }
         coral_array_destroy(*out);
@@ -453,7 +452,7 @@ bool coral_array_init(struct coral_array *object,
                       size_t size,
                       struct coral_range *capacity_range,
                       void (*on_insert)(void *),
-                      void (*on_remove)(void *)) {
+                      void (*on_erase)(void *)) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
@@ -463,7 +462,7 @@ bool coral_array_init(struct coral_array *object,
                             size,
                             capacity_range,
                             on_insert,
-                            on_remove);
+                            on_erase);
 }
 
 bool coral_array_destroy(struct coral_array *object) {

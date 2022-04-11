@@ -193,6 +193,4 @@ bool coral_range_get_next(struct coral_range *object, size_t current,
 bool coral_range_get_prev(struct coral_range *object, size_t current,
                           size_t *out);
 
-// TODO: get range length ...
-
 #endif /* _CORAL_RANGE_H_ */

@@ -7,7 +7,6 @@
 
 #include "private/coral.h"
 #include "private/autorelease_pool.h"
-#include "test/cmocka.h"
 
 #pragma mark private
 
@@ -56,9 +55,8 @@ void coral$atomic_store(atomic_size_t *ptr, const size_t value) {
 bool coral$atomic_compare_exchange(atomic_size_t *ptr, const size_t compare,
                                    const size_t value) {
     coral_required(ptr);
-    const atomic_size_t cmp = compare;
     const atomic_size_t val = value;
-    return atomic_compare_exchange_strong(ptr, &cmp, val);
+    return atomic_compare_exchange_strong(ptr, (size_t*)&compare, val);
 }
 
 uintptr_t coral$atomic_load_ptr(const atomic_uintptr_t *ptr) {
@@ -77,9 +75,8 @@ bool coral$atomic_compare_exchange_ptr(atomic_uintptr_t *ptr,
                                        const uintptr_t compare,
                                        const uintptr_t value) {
     coral_required(ptr);
-    const atomic_uintptr_t cmp = compare;
     const atomic_uintptr_t val = value;
-    return atomic_compare_exchange_strong(ptr, &cmp, val);
+    return atomic_compare_exchange_strong(ptr, (uintptr_t*)&compare, val);
 }
 
 void coral$retain(atomic_size_t *ref_counter) {

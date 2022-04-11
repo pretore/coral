@@ -39,10 +39,10 @@ bool coral_array_alloc(struct coral_array **out);
  * @param [in] size number of bytes that each element consists of.
  * @param [in] capacity_range limit the capacity of the array to a specified
  * minimum and/or maximum while also specifying how to increase the capacity.
- * If unspecified an instance of coral_range_of_delta with no limits and we
- * will increase the capacity in batches of 16.
+ * If unspecified an instance of coral_range_of_delta with no limits set
+ * while the capacity will be increased in batches of 16.
  * @param [in] on_insert called when an item is inserted.
- * @param [in] on_remove called when an item is removed.
+ * @param [in] on_erase called when an item is erased.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
@@ -57,7 +57,7 @@ bool coral_array_init(struct coral_array *object,
                       size_t size,
                       struct coral_range *capacity_range,
                       void (*on_insert)(void *),
-                      void (*on_remove)(void *));
+                      void (*on_erase)(void *));
 
 /**
  * @brief Destroy the array instance.

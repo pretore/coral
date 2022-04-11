@@ -1,9 +1,9 @@
 #ifndef _CORAL_TEST_WRAP_H_
 #define _CORAL_TEST_WRAP_H_
 
+#ifdef TEST
 #include <stdbool.h>
 
-#ifdef TEST
 extern bool pthread_rwlock_init_is_overridden;
 int __wrap_pthread_rwlock_init(void *rwlock, const void *attr);
 
