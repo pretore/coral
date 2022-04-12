@@ -5,8 +5,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <coral/range.h>
-
 struct coral_ref;
 
 struct coral_range {
@@ -73,8 +71,5 @@ bool coral$range_get_prev(struct coral_range *object,
 struct coral$range_get_context_args {
     struct coral_context **out;
 };
-
-bool coral$range_get_context(struct coral_range *object,
-                             struct coral$range_get_context_args *args);
 
 #endif /* _CORAL_PRIVATE_RANGE_H_ */

@@ -4,10 +4,6 @@
 
 #pragma mark private
 
-bool coral$ref_alloc(struct coral_ref **out) {
-    return coral_object_alloc(sizeof(struct coral_ref), (void **) out);
-}
-
 bool coral$ref_init(struct coral_ref *object, void *instance) {
     coral_required(object);
     coral_required(instance);
@@ -52,11 +48,7 @@ bool coral_ref_of(struct coral_ref **out, void *instance) {
 }
 
 bool coral_ref_alloc(struct coral_ref **out) {
-    if (!out) {
-        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
-        return false;
-    }
-    return coral$ref_alloc(out);
+    return coral_object_alloc(sizeof(struct coral_ref), (void **) out);
 }
 
 bool coral_ref_init(struct coral_ref *object, void *instance) {

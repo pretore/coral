@@ -1,9 +1,10 @@
 #ifndef _CORAL_PRIVATE_LOCK_H_
 #define _CORAL_PRIVATE_LOCK_H_
 
-#include <pthread.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <pthread.h>
 
 struct coral_lock {
     pthread_mutex_t *mutex;

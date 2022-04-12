@@ -32,8 +32,6 @@ static void check_array_init_error_on_null_object_ptr(void **state) {
     assert_false(coral_array_init(NULL,
                                   0,
                                   0,
-                                  NULL,
-                                  NULL,
                                   NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
@@ -47,11 +45,9 @@ static void check_array_init(void **state) {
     assert_true(coral_array_init(array,
                                  10,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     assert_ptr_not_equal(NULL, array->data);
-    assert_int_equal(10 + DEFAULT, array->capacity);
+    assert_int_equal(16 * 1.5, array->capacity);
     assert_int_equal(10, array->count);
     assert_int_equal(sizeof(void *), array->size);
     coral_autorelease_pool_drain();
@@ -66,8 +62,6 @@ static void check_array_init_empty(void **state) {
     assert_true(coral_array_init(array,
                                  0,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     assert_ptr_not_equal(NULL, array->data);
     assert_int_equal(0, array->count);
@@ -262,7 +256,7 @@ static void check_array_get_capacity(void **state) {
     assert_true(coral_array_of_objects(&object));
     struct coral_range_values values;
     assert_true(coral_array_get_capacity(object, &values));
-    assert_int_equal(0, values.first);
+    assert_int_equal(16, values.first);
     assert_int_equal(SIZE_MAX, values.last);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
@@ -290,8 +284,6 @@ static void check_array_get_count(void **state) {
     assert_true(coral_array_init(array,
                                  10,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     size_t count = 0;
     assert_true(coral_array_get_count(array, &count));
@@ -314,8 +306,6 @@ static void check_array_set_count_error_on_memory_allocation(void **state) {
     assert_true(coral_array_init(array,
                                  16,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     assert_int_equal(16, array->count);
     assert_false(coral_array_set_count(array, SIZE_MAX));
@@ -331,13 +321,11 @@ static void check_array_set_count_to_zero(void **state) {
     assert_true(coral_array_init(array,
                                  16,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     assert_int_equal(16, array->count);
     assert_true(coral_array_set_count(array, 0));
     assert_int_equal(0, array->count);
-    assert_int_equal(16 + DEFAULT, array->capacity);
+    assert_int_equal(24, array->capacity);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
@@ -349,13 +337,11 @@ static void check_array_set_count_to_lower_value(void **state) {
     assert_true(coral_array_init(array,
                                  16,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     assert_int_equal(16, array->count);
     assert_true(coral_array_set_count(array, 8));
     assert_int_equal(8, array->count);
-    assert_int_equal(16 + DEFAULT, array->capacity);
+    assert_int_equal(24, array->capacity);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
@@ -367,8 +353,6 @@ static void check_array_set_count_to_higher_value(void **state) {
     assert_true(coral_array_init(array,
                                  8,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     assert_int_equal(8, array->count);
     assert_true(coral_array_set_count(array, 16));
@@ -384,8 +368,6 @@ static void check_array_set_count_no_change(void **state) {
     assert_true(coral_array_init(array,
                                  8,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     assert_int_equal(8, array->count);
     assert_true(coral_array_set_count(array, 8));
@@ -416,8 +398,6 @@ static void check_array_get_size(void **state) {
     assert_true(coral_array_init(array,
                                  10,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     size_t size = 0;
     assert_true(coral_array_get_size(array, &size));
@@ -440,8 +420,6 @@ static void check_array_set_error_on_item_out_of_bounds(void **state) {
     assert_true(coral_array_init(array,
                                  0,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     struct coral_array_item item = {
             .size = array->size,
@@ -460,8 +438,6 @@ static void check_array_set_larger_size(void **state) {
     assert_true(coral_array_init(array,
                                  1,
                                  sizeof(void *) / 2,
-                                 NULL,
-                                 NULL,
                                  NULL));
     struct coral_array_item item = {
             .size = sizeof(void *),
@@ -483,8 +459,6 @@ static void check_array_set(void **state) {
     assert_true(coral_array_init(array,
                                  1,
                                  sizeof(size_t),
-                                 NULL,
-                                 NULL,
                                  NULL));
     const size_t value = SIZE_MAX;
     struct coral_array_item item = {
@@ -519,8 +493,6 @@ static void check_array_get_error_on_item_out_of_bounds(void **state) {
     assert_true(coral_array_init(array,
                                  10,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     struct coral_array_item item;
     assert_false(coral_array_get(array, array->count, &item));
@@ -536,8 +508,6 @@ static void check_array_get(void **state) {
     assert_true(coral_array_init(array,
                                  10,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     struct coral_array_item item;
     assert_true(coral_array_get(array, 4, &item));
@@ -601,8 +571,6 @@ static void check_array_sort(void **state) {
     assert_true(coral_array_init(array,
                                  0,
                                  sizeof(unsigned char),
-                                 NULL,
-                                 NULL,
                                  NULL));
     const unsigned char values[10] = {
             9, 8, 7, 6, 5,
@@ -657,8 +625,6 @@ static void check_array_insert_error_on_out_of_bounds(void **state) {
     assert_true(coral_array_init(array,
                                  10,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     assert_false(coral_array_insert(array, array->count, NULL));
     assert_int_equal(CORAL_ERROR_INDEX_OUT_OF_BOUNDS, coral_error);
@@ -673,8 +639,6 @@ static void check_array_insert_last_item(void **state) {
     assert_true(coral_array_init(array,
                                  10,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     struct coral_array_item item = {
             .size = array->size,
@@ -682,7 +646,7 @@ static void check_array_insert_last_item(void **state) {
     };
     assert_true(coral_array_insert(array, array->count - 1, &item));
     assert_int_equal(11, array->count);
-    assert_int_equal(10 + DEFAULT, array->capacity);
+    assert_int_equal(24, array->capacity);
     item.size = 0;
     item.data = NULL;
     assert_true(coral_array_get(array, array->count - 2, &item));
@@ -702,8 +666,6 @@ static void check_array_insert_first_item(void **state) {
     assert_true(coral_array_init(array,
                                  10,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     struct coral_array_item item = {
             .size = array->size,
@@ -711,7 +673,7 @@ static void check_array_insert_first_item(void **state) {
     };
     assert_true(coral_array_insert(array, 0, &item));
     assert_int_equal(11, array->count);
-    assert_int_equal(10 + DEFAULT, array->capacity);
+    assert_int_equal(24, array->capacity);
     item.size = 0;
     item.data = NULL;
     assert_true(coral_array_get(array, 0, &item));
@@ -730,18 +692,16 @@ static void check_array_insert_no_capacity_increase(void **state) {
     assert_true(coral_array_init(array,
                                  10,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     assert_true(coral_array_set_count(array, 6));
-    assert_int_equal(10 + DEFAULT, array->capacity);
+    assert_int_equal(24, array->capacity);
     assert_int_equal(6, array->count);
     struct coral_array_item item = {
             .size = array->size,
             .data = check_array_insert_no_capacity_increase
     };
     assert_true(coral_array_insert(array, 4, &item));
-    assert_int_equal(10 + DEFAULT, array->capacity);
+    assert_int_equal(24, array->capacity);
     assert_int_equal(7, array->count);
     item.size = 0;
     item.data = NULL;
@@ -762,8 +722,6 @@ static void check_array_insert_on_error_restore_count(void **state) {
     assert_true(coral_array_init(array,
                                  10,
                                  sizeof(void *),
-                                 NULL,
-                                 NULL,
                                  NULL));
     struct coral_array_item item = {
             .size = array->size,
@@ -774,7 +732,7 @@ static void check_array_insert_on_error_restore_count(void **state) {
     assert_false(coral_array_insert(array, 0, &item));
     assert_int_equal(CORAL_ERROR_MEMORY_ALLOCATION_FAILED, coral_error);
     assert_int_equal(10, array->count);
-    assert_int_equal(10 + DEFAULT, array->capacity);
+    assert_int_equal(24, array->capacity);
     item.size = 0;
     item.data = NULL;
     coral_error = CORAL_ERROR_NONE;
@@ -788,6 +746,7 @@ static void check_array_insert_on_error_restore_count(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
+// TODO: check array_insert with increase in capacity
 // TODO: check array_insert with error_on_capacity_limit_reached
 
 static void check_array_add_error_on_null_object_ptr(void **state) {
@@ -822,9 +781,7 @@ static void check_array_add(void **state) {
     assert_true(coral_array_init(object,
                                  0,
                                  sizeof(void *),
-                                 capacity,
-                                 NULL,
-                                 NULL));
+                                 capacity));
     struct coral_array_item item = {
             .size = 1,
             .data = &check_array_add
@@ -844,9 +801,7 @@ static void check_array_add_error_capacity_limit_reached(void **state) {
     assert_true(coral_array_init(object,
                                  0,
                                  sizeof(void *),
-                                 capacity,
-                                 NULL,
-                                 NULL));
+                                 capacity));
     struct coral_array_item item = {
             .size = 1,
             .data = &check_array_add_error_capacity_limit_reached
@@ -875,9 +830,7 @@ static void check_array_erase_error_on_index_out_of_bounds(void **state) {
     assert_true(coral_array_init(object,
                                  0,
                                  sizeof(void *),
-                                 capacity,
-                                 NULL,
-                                 NULL));
+                                 capacity));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
     assert_false(coral_array_erase(object, 0));
     assert_int_equal(CORAL_ERROR_INDEX_OUT_OF_BOUNDS, coral_error);
@@ -895,9 +848,7 @@ static void check_array_erase(void **state) {
     assert_true(coral_array_init(object,
                                  1,
                                  sizeof(void *),
-                                 capacity,
-                                 NULL,
-                                 NULL));
+                                 capacity));
     assert_int_equal(1, object->count);
     assert_true(coral_array_erase(object, 0));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
@@ -923,9 +874,7 @@ static void check_array_remove(void **state) {
     assert_true(coral_array_init(object,
                                  2,
                                  sizeof(void *),
-                                 capacity,
-                                 NULL,
-                                 NULL));
+                                 capacity));
     struct coral_array_item item = {
             .size = 1,
             .data = &check_array_remove

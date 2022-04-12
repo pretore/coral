@@ -6,28 +6,19 @@
 #include <stdint.h>
 
 struct coral_range;
-
+struct coral_array_item;
 struct coral_array {
     size_t capacity;
     size_t count;
     size_t size;
     unsigned char *data;
     struct coral_ref *capacity_range_ref;
-
-    void (*on_insert)(void *);
-    void (*on_erase)(void *);
 };
-
-struct coral_array_item;
-
-bool coral$array_alloc(struct coral_array **out);
 
 bool coral$array_init(struct coral_array *object,
                       size_t count,
                       size_t size,
-                      struct coral_range *capacity_range,
-                      void (*on_insert)(void *),
-                      void (*on_erase)(void *));
+                      struct coral_range *capacity_range);
 
 void coral$array_destroy(struct coral_array *object);
 

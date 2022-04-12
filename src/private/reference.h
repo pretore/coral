@@ -8,8 +8,6 @@ struct coral_ref {
     void* object;
 };
 
-bool coral$ref_alloc(struct coral_ref **out);
-
 bool coral$ref_init(struct coral_ref *object, void *instance);
 
 void coral$ref_destroy(struct coral_ref *object);

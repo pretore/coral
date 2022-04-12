@@ -1,6 +1,8 @@
 #ifndef _CORAL_PRIVATE_OBJECT_POOL_H_
 #define _CORAL_PRIVATE_OBJECT_POOL_H_
 
+#include <stddef.h>
+
 struct coral_object;
 
 struct coral$autorelease_pool_entry {

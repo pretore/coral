@@ -8,8 +8,6 @@ struct coral_weak_ref {
     void *object;
 };
 
-bool coral$weak_ref_alloc(struct coral_weak_ref **out);
-
 bool coral$weak_ref_init(struct coral_weak_ref *object, void *instance);
 
 void coral$weak_ref_destroy(struct coral_weak_ref *object);
