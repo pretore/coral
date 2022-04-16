@@ -93,19 +93,19 @@ struct coral$array_insert_args {
 bool coral$array_insert(struct coral_array *object,
                         struct coral$array_insert_args *args);
 
+struct coral$array_delete_args {
+    size_t at;
+};
+
+bool coral$array_delete(struct coral_array *object,
+                        struct coral$array_delete_args *args);
+
 struct coral$array_add_args {
     const struct coral_array_item *item;
 };
 
 bool coral$array_add(struct coral_array *object,
                      struct coral$array_add_args *args);
-
-struct coral$array_erase_args {
-    size_t at;
-};
-
-bool coral$array_erase(struct coral_array *object,
-                       struct coral$array_erase_args *args);
 
 bool coral$array_remove(struct coral_array *object, void *args);
 

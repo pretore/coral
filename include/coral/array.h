@@ -237,6 +237,21 @@ bool coral_array_insert(struct coral_array *object, size_t at,
                         const struct coral_array_item *item);
 
 /**
+ * @brief Delete the item at the given index.
+ * @param [in] object array instance of which to delete items from.
+ * @param [in] at index of item that we would like to erase.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_INVALID_VALUE if given item does not have size nor
+ * data defined.
+ * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
+ * (being) destroyed.
+ * @throws CORAL_ERROR_INDEX_OUT_OF_BOUNDS if the given index is not
+ * contained within the array.
+ */
+bool coral_array_delete(struct coral_array *object, size_t at);
+
+/**
  * @brief Add contents of the item at the end of the array.
  * @param [in] object array instance which will contain item.
  * @param [in] item holder of the contents for adding the item at the end of
@@ -252,21 +267,6 @@ bool coral_array_insert(struct coral_array *object, size_t at,
  */
 bool coral_array_add(struct coral_array *object,
                      const struct coral_array_item *item);
-
-/**
- * @brief Erase the item at the given index.
- * @param [in] object array instance of which to erase items from.
- * @param [in] at index of item that we would like to erase.
- * @return On success true, otherwise false if an error has occurred.
- * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
- * @throws CORAL_ERROR_INVALID_VALUE if given item does not have size nor
- * data defined.
- * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
- * (being) destroyed.
- * @throws CORAL_ERROR_INDEX_OUT_OF_BOUNDS if the given index is not
- * contained within the array.
- */
-bool coral_array_erase(struct coral_array *object, size_t at);
 
 /**
  * @brief Remove the last item in the array.

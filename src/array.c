@@ -369,8 +369,8 @@ bool coral$array_add(struct coral_array *object,
     return true;
 }
 
-bool coral$array_erase(struct coral_array *object,
-                       struct coral$array_erase_args *args) {
+bool coral$array_delete(struct coral_array *object,
+                        struct coral$array_delete_args *args) {
     coral_required(object);
     coral_required(args);
     if (object->count <= args->at) {
@@ -648,17 +648,17 @@ bool coral_array_add(struct coral_array *object,
             &args);
 }
 
-bool coral_array_erase(struct coral_array *object, const size_t at) {
+bool coral_array_delete(struct coral_array *object, const size_t at) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    struct coral$array_erase_args args = {
+    struct coral$array_delete_args args = {
             .at = at
     };
     return coral_object_invoke(
             object,
-            (coral_invokable_t) coral$array_erase,
+            (coral_invokable_t) coral$array_delete,
             &args);
 }
 

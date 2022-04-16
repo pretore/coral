@@ -194,11 +194,11 @@ static void check_array_add_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_erase_error_on_object_uninitialized(void **state) {
+static void check_array_delete_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
-    assert_false(coral_array_erase(object, 0));
+    assert_false(coral_array_delete(object, 0));
     assert_int_equal(CORAL_ERROR_OBJECT_IS_UNINITIALIZED, coral_error);
     coral_array_destroy(object);
     coral_error = CORAL_ERROR_NONE;
@@ -813,14 +813,14 @@ static void check_array_add_error_capacity_limit_reached(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_erase_error_on_null_object_ptr(void **state) {
+static void check_array_delete_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral_array_erase(NULL, 0));
+    assert_false(coral_array_delete(NULL, 0));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_erase_error_on_index_out_of_bounds(void **state) {
+static void check_array_delete_error_on_index_out_of_bounds(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_range *capacity;
     struct coral_range_values value = {0, 1};
@@ -832,13 +832,13 @@ static void check_array_erase_error_on_index_out_of_bounds(void **state) {
                                  sizeof(void *),
                                  capacity));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
-    assert_false(coral_array_erase(object, 0));
+    assert_false(coral_array_delete(object, 0));
     assert_int_equal(CORAL_ERROR_INDEX_OUT_OF_BOUNDS, coral_error);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_erase(void **state) {
+static void check_array_delete(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_range *capacity;
     struct coral_range_values value = {0, 2};
@@ -850,7 +850,7 @@ static void check_array_erase(void **state) {
                                  sizeof(void *),
                                  capacity));
     assert_int_equal(1, object->count);
-    assert_true(coral_array_erase(object, 0));
+    assert_true(coral_array_delete(object, 0));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
     assert_int_equal(0, object->count);
     coral_autorelease_pool_drain();
@@ -913,7 +913,7 @@ int main(int argc, char *argv[]) {
             cmocka_unit_test(check_array_sort_error_on_object_uninitialized),
             cmocka_unit_test(check_array_insert_error_on_object_uninitialized),
             cmocka_unit_test(check_array_add_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_erase_error_on_object_uninitialized),
+            cmocka_unit_test(check_array_delete_error_on_object_uninitialized),
             cmocka_unit_test(check_array_remove_error_on_object_uninitialized),
             cmocka_unit_test(check_array_retain_error_on_null_object_ptr),
             cmocka_unit_test(check_array_release_error_on_null_object_ptr),
@@ -953,13 +953,13 @@ int main(int argc, char *argv[]) {
             cmocka_unit_test(check_array_insert_first_item),
             cmocka_unit_test(check_array_insert_no_capacity_increase),
             cmocka_unit_test(check_array_insert_on_error_restore_count),
+            cmocka_unit_test(check_array_delete_error_on_null_object_ptr),
+            cmocka_unit_test(check_array_delete_error_on_index_out_of_bounds),
+            cmocka_unit_test(check_array_delete),
             cmocka_unit_test(check_array_add_error_on_null_object_ptr),
             cmocka_unit_test(check_array_add_error_on_invalid_value),
             cmocka_unit_test(check_array_add),
             cmocka_unit_test(check_array_add_error_capacity_limit_reached),
-            cmocka_unit_test(check_array_erase_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_erase_error_on_index_out_of_bounds),
-            cmocka_unit_test(check_array_erase),
             cmocka_unit_test(check_array_remove_error_on_null_object_ptr),
             cmocka_unit_test(check_array_remove),
     };
