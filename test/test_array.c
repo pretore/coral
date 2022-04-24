@@ -8,14 +8,14 @@
 #include "private/coral.h"
 #include "private/array.h"
 
-static void check_array_alloc_error_on_null_argument_ptr(void **state) {
+static void check_alloc_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_alloc(NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_alloc(void **state) {
+static void check_alloc(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -27,7 +27,7 @@ static void check_array_alloc(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_init_error_on_null_object_ptr(void **state) {
+static void check_init_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_init(NULL,
                                   0,
@@ -37,7 +37,7 @@ static void check_array_init_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_init(void **state) {
+static void check_init(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -54,7 +54,7 @@ static void check_array_init(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_init_empty(void **state) {
+static void check_init_empty(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -70,7 +70,7 @@ static void check_array_init_empty(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_retain_error_on_object_uninitialized(void **state) {
+static void check_retain_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -80,7 +80,7 @@ static void check_array_retain_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_release_error_on_object_uninitialized(void **state) {
+static void check_release_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -91,7 +91,7 @@ static void check_array_release_error_on_object_uninitialized(void **state) {
 }
 
 static void
-check_array_autorelease_error_on_object_uninitialized(void **state) {
+check_autorelease_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -102,7 +102,7 @@ check_array_autorelease_error_on_object_uninitialized(void **state) {
 }
 
 static void
-check_array_get_capacity_error_on_object_uninitialized(void **state) {
+check_get_capacity_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -112,7 +112,7 @@ check_array_get_capacity_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_count_error_on_object_uninitialized(void **state) {
+static void check_get_count_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -122,7 +122,7 @@ static void check_array_get_count_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_count_error_on_object_uninitialized(void **state) {
+static void check_set_count_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -132,7 +132,7 @@ static void check_array_set_count_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_size_error_on_object_uninitialized(void **state) {
+static void check_get_size_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -142,7 +142,7 @@ static void check_array_get_size_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_error_on_object_uninitialized(void **state) {
+static void check_set_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -152,7 +152,7 @@ static void check_array_set_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_error_on_object_uninitialized(void **state) {
+static void check_get_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -162,7 +162,7 @@ static void check_array_get_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_sort_error_on_object_uninitialized(void **state) {
+static void check_sort_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -174,7 +174,7 @@ static void check_array_sort_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_insert_error_on_object_uninitialized(void **state) {
+static void check_insert_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -184,7 +184,7 @@ static void check_array_insert_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_add_error_on_object_uninitialized(void **state) {
+static void check_add_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -194,7 +194,7 @@ static void check_array_add_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_delete_error_on_object_uninitialized(void **state) {
+static void check_delete_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -204,7 +204,7 @@ static void check_array_delete_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_remove_error_on_object_uninitialized(void **state) {
+static void check_remove_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
@@ -214,28 +214,28 @@ static void check_array_remove_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_retain_error_on_null_object_ptr(void **state) {
+static void check_retain_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_retain(NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_release_error_on_null_object_ptr(void **state) {
+static void check_release_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_release(NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_autorelease_error_on_null_object_ptr(void **state) {
+static void check_autorelease_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_autorelease(NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_capacity_error_on_null_object_ptr(void **state) {
+static void check_get_capacity_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_range_values values;
     assert_false(coral_array_get_capacity(NULL, &values));
@@ -243,14 +243,14 @@ static void check_array_get_capacity_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_capacity_error_on_null_argument_ptr(void **state) {
+static void check_get_capacity_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_get_capacity((struct coral_array *) 1, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_capacity(void **state) {
+static void check_get_capacity(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_of_objects(&object));
@@ -262,7 +262,7 @@ static void check_array_get_capacity(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_count_error_on_null_object_ptr(void **state) {
+static void check_get_count_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     size_t count = 0;
     assert_false(coral_array_get_count(NULL, &count));
@@ -270,14 +270,14 @@ static void check_array_get_count_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_count_error_on_null_argument_ptr(void **state) {
+static void check_get_count_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_get_count((struct coral_array *) 1, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_count(void **state) {
+static void check_get_count(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -292,14 +292,14 @@ static void check_array_get_count(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_count_error_on_null_object_ptr(void **state) {
+static void check_set_count_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_set_count(NULL, 10));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_count_error_on_memory_allocation(void **state) {
+static void check_set_count_error_on_memory_allocation(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -314,7 +314,7 @@ static void check_array_set_count_error_on_memory_allocation(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_count_to_zero(void **state) {
+static void check_set_count_to_zero(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -330,7 +330,7 @@ static void check_array_set_count_to_zero(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_count_to_lower_value(void **state) {
+static void check_set_count_to_lower_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -346,7 +346,7 @@ static void check_array_set_count_to_lower_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_count_to_higher_value(void **state) {
+static void check_set_count_to_higher_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -361,7 +361,7 @@ static void check_array_set_count_to_higher_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_count_no_change(void **state) {
+static void check_set_count_no_change(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -376,7 +376,7 @@ static void check_array_set_count_no_change(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_size_error_on_null_object_ptr(void **state) {
+static void check_get_size_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     size_t size = 0;
     assert_false(coral_array_get_size(NULL, &size));
@@ -384,14 +384,14 @@ static void check_array_get_size_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_size_error_on_null_argument_ptr(void **state) {
+static void check_get_size_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_get_size((struct coral_array *) 1, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_size(void **state) {
+static void check_get_size(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -406,14 +406,14 @@ static void check_array_get_size(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_error_on_null_object_ptr(void **state) {
+static void check_set_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_set(NULL, 10, (void *) 1));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_error_on_item_out_of_bounds(void **state) {
+static void check_set_error_on_item_out_of_bounds(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -431,7 +431,7 @@ static void check_array_set_error_on_item_out_of_bounds(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_set_larger_size(void **state) {
+static void check_set_larger_size(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -452,7 +452,7 @@ static void check_array_set_larger_size(void **state) {
 
 // FIXME: check_array_set_smaller_size ... should have no affect
 
-static void check_array_set(void **state) {
+static void check_set(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -472,21 +472,21 @@ static void check_array_set(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_error_on_null_object_ptr(void **state) {
+static void check_get_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_get(NULL, 0, (void *) 1));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_error_on_null_argument_ptr(void **state) {
+static void check_get_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_get((void *) 1, 0, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get_error_on_item_out_of_bounds(void **state) {
+static void check_get_error_on_item_out_of_bounds(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -501,7 +501,7 @@ static void check_array_get_error_on_item_out_of_bounds(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_get(void **state) {
+static void check_get(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -515,26 +515,26 @@ static void check_array_get(void **state) {
     assert_int_equal(0, *(size_t *) item.data);
     assert_int_equal(sizeof(void *), item.size);
     item.size = 4;
-    item.data = &check_array_get;
+    item.data = &check_get;
     assert_true(coral_array_set(array, 4, &item));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
     assert_true(coral_array_get(array, 4, &item));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
     assert_int_equal(sizeof(void *), item.size);
-    assert_ptr_not_equal(&check_array_get, item.data);
-    assert_memory_equal(&check_array_get, item.data, 4);
+    assert_ptr_not_equal(&check_get, item.data);
+    assert_memory_equal(&check_get, item.data, 4);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_of_objects_error_on_null_argument_ptr(void **state) {
+static void check_of_objects_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_of_objects(NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_of_objects(void **state) {
+static void check_of_objects(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_of_objects(&array));
@@ -550,21 +550,21 @@ static int compare(const struct coral_array_item *a,
     return memcmp(a->data, b->data, a->size);
 }
 
-static void check_array_sort_error_on_null_object_ptr(void **state) {
+static void check_sort_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_sort(NULL, compare));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_sort_error_on_null_argument_ptr(void **state) {
+static void check_sort_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_sort((void *) 1, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_sort(void **state) {
+static void check_sort(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array = NULL;
     assert_true(coral_array_alloc(&array));
@@ -595,14 +595,14 @@ static void check_array_sort(void **state) {
 
 // TODO: check_array_find ...
 
-static void check_array_insert_error_on_null_object_ptr(void **state) {
+static void check_insert_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_insert(NULL, 1, (struct coral_array_item *) 1));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_insert_error_on_invalid_value(void **state) {
+static void check_insert_error_on_invalid_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array_item item = {
             .size = 0,
@@ -618,7 +618,7 @@ static void check_array_insert_error_on_invalid_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_insert_error_on_out_of_bounds(void **state) {
+static void check_insert_error_on_out_of_bounds(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array;
     assert_true(coral_array_alloc(&array));
@@ -632,7 +632,7 @@ static void check_array_insert_error_on_out_of_bounds(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_insert_last_item(void **state) {
+static void check_insert_last_item(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array;
     assert_true(coral_array_alloc(&array));
@@ -642,7 +642,7 @@ static void check_array_insert_last_item(void **state) {
                                  NULL));
     struct coral_array_item item = {
             .size = array->size,
-            .data = check_array_insert_last_item
+            .data = check_insert_last_item
     };
     assert_true(coral_array_insert(array, array->count - 1, &item));
     assert_int_equal(11, array->count);
@@ -652,14 +652,14 @@ static void check_array_insert_last_item(void **state) {
     assert_true(coral_array_get(array, array->count - 2, &item));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
     assert_int_equal(array->size, item.size);
-    assert_ptr_not_equal(&check_array_insert_last_item, item.data);
-    assert_memory_equal(&check_array_insert_last_item, item.data,
+    assert_ptr_not_equal(&check_insert_last_item, item.data);
+    assert_memory_equal(&check_insert_last_item, item.data,
                         item.size);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_insert_first_item(void **state) {
+static void check_insert_first_item(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array;
     assert_true(coral_array_alloc(&array));
@@ -669,7 +669,7 @@ static void check_array_insert_first_item(void **state) {
                                  NULL));
     struct coral_array_item item = {
             .size = array->size,
-            .data = check_array_insert_first_item
+            .data = check_insert_first_item
     };
     assert_true(coral_array_insert(array, 0, &item));
     assert_int_equal(11, array->count);
@@ -679,13 +679,13 @@ static void check_array_insert_first_item(void **state) {
     assert_true(coral_array_get(array, 0, &item));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
     assert_int_equal(array->size, item.size);
-    assert_ptr_not_equal(&check_array_insert_first_item, item.data);
-    assert_memory_equal(&check_array_insert_first_item, item.data, item.size);
+    assert_ptr_not_equal(&check_insert_first_item, item.data);
+    assert_memory_equal(&check_insert_first_item, item.data, item.size);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_insert_no_capacity_increase(void **state) {
+static void check_insert_no_capacity_increase(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array;
     assert_true(coral_array_alloc(&array));
@@ -698,7 +698,7 @@ static void check_array_insert_no_capacity_increase(void **state) {
     assert_int_equal(6, array->count);
     struct coral_array_item item = {
             .size = array->size,
-            .data = check_array_insert_no_capacity_increase
+            .data = check_insert_no_capacity_increase
     };
     assert_true(coral_array_insert(array, 4, &item));
     assert_int_equal(24, array->capacity);
@@ -708,14 +708,14 @@ static void check_array_insert_no_capacity_increase(void **state) {
     assert_true(coral_array_get(array, 4, &item));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
     assert_int_equal(array->size, item.size);
-    assert_ptr_not_equal(&check_array_insert_no_capacity_increase, item.data);
-    assert_memory_equal(&check_array_insert_no_capacity_increase,
+    assert_ptr_not_equal(&check_insert_no_capacity_increase, item.data);
+    assert_memory_equal(&check_insert_no_capacity_increase,
                         item.data, item.size);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_insert_on_error_restore_count(void **state) {
+static void check_insert_on_error_restore_count(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *array;
     assert_true(coral_array_alloc(&array));
@@ -725,7 +725,7 @@ static void check_array_insert_on_error_restore_count(void **state) {
                                  NULL));
     struct coral_array_item item = {
             .size = array->size,
-            .data = check_array_insert_on_error_restore_count
+            .data = check_insert_on_error_restore_count
     };
     assert_true(coral_array_set(array, 1, &item));
     item.size = SIZE_MAX;
@@ -739,8 +739,8 @@ static void check_array_insert_on_error_restore_count(void **state) {
     assert_true(coral_array_get(array, 1, &item));
     assert_int_equal(CORAL_ERROR_NONE, coral_error);
     assert_int_equal(array->size, item.size);
-    assert_ptr_not_equal(&check_array_insert_on_error_restore_count, item.data);
-    assert_memory_equal(&check_array_insert_on_error_restore_count, item.data,
+    assert_ptr_not_equal(&check_insert_on_error_restore_count, item.data);
+    assert_memory_equal(&check_insert_on_error_restore_count, item.data,
                         item.size);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
@@ -749,14 +749,14 @@ static void check_array_insert_on_error_restore_count(void **state) {
 // TODO: check array_insert with increase in capacity
 // TODO: check array_insert with error_on_capacity_limit_reached
 
-static void check_array_add_error_on_null_object_ptr(void **state) {
+static void check_add_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_add(NULL, NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_add_error_on_invalid_value(void **state) {
+static void check_add_error_on_invalid_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array_item item = {
             .data = (void *) 1
@@ -771,7 +771,7 @@ static void check_array_add_error_on_invalid_value(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_add(void **state) {
+static void check_add(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_range *capacity;
     struct coral_range_values value = {0, 1};
@@ -784,14 +784,14 @@ static void check_array_add(void **state) {
                                  capacity));
     struct coral_array_item item = {
             .size = 1,
-            .data = &check_array_add
+            .data = &check_add
     };
     assert_true(coral_array_add(object, &item));
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_add_error_capacity_limit_reached(void **state) {
+static void check_add_error_capacity_limit_reached(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_range *capacity;
     struct coral_range_values value = {0, 1};
@@ -804,7 +804,7 @@ static void check_array_add_error_capacity_limit_reached(void **state) {
                                  capacity));
     struct coral_array_item item = {
             .size = 1,
-            .data = &check_array_add_error_capacity_limit_reached
+            .data = &check_add_error_capacity_limit_reached
     };
     assert_true(coral_array_add(object, &item));
     assert_false(coral_array_add(object, &item));
@@ -813,14 +813,14 @@ static void check_array_add_error_capacity_limit_reached(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_delete_error_on_null_object_ptr(void **state) {
+static void check_delete_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_delete(NULL, 0));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_delete_error_on_index_out_of_bounds(void **state) {
+static void check_delete_error_on_index_out_of_bounds(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_range *capacity;
     struct coral_range_values value = {0, 1};
@@ -838,7 +838,7 @@ static void check_array_delete_error_on_index_out_of_bounds(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_delete(void **state) {
+static void check_delete(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_range *capacity;
     struct coral_range_values value = {0, 2};
@@ -857,14 +857,14 @@ static void check_array_delete(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_remove_error_on_null_object_ptr(void **state) {
+static void check_remove_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_remove(NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_array_remove(void **state) {
+static void check_remove(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_range *capacity;
     struct coral_range_values value = {0, 3};
@@ -877,7 +877,7 @@ static void check_array_remove(void **state) {
                                  capacity));
     struct coral_array_item item = {
             .size = 1,
-            .data = &check_array_remove
+            .data = &check_remove
     };
     assert_true(coral_array_set(object, object->count - 1, &item));
     assert_int_equal(2, object->count);
@@ -896,72 +896,72 @@ static void check_array_remove(void **state) {
 
 int main(int argc, char *argv[]) {
     const struct CMUnitTest tests[] = {
-            cmocka_unit_test(check_array_alloc_error_on_null_argument_ptr),
-            cmocka_unit_test(check_array_alloc),
-            cmocka_unit_test(check_array_init_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_init),
-            cmocka_unit_test(check_array_init_empty),
-            cmocka_unit_test(check_array_retain_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_release_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_autorelease_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_get_capacity_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_get_count_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_set_count_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_get_size_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_set_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_get_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_sort_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_insert_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_add_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_delete_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_remove_error_on_object_uninitialized),
-            cmocka_unit_test(check_array_retain_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_release_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_autorelease_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_get_capacity_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_get_capacity_error_on_null_argument_ptr),
-            cmocka_unit_test(check_array_get_capacity),
-            cmocka_unit_test(check_array_get_count_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_get_count_error_on_null_argument_ptr),
-            cmocka_unit_test(check_array_get_count),
-            cmocka_unit_test(check_array_set_count_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_set_count_error_on_memory_allocation),
-            cmocka_unit_test(check_array_set_count_to_zero),
-            cmocka_unit_test(check_array_set_count_to_lower_value),
-            cmocka_unit_test(check_array_set_count_to_higher_value),
-            cmocka_unit_test(check_array_set_count_no_change),
-            cmocka_unit_test(check_array_get_size_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_get_size_error_on_null_argument_ptr),
-            cmocka_unit_test(check_array_get_size),
-            cmocka_unit_test(check_array_set_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_set_error_on_item_out_of_bounds),
-            cmocka_unit_test(check_array_set_larger_size),
-            cmocka_unit_test(check_array_set),
-            cmocka_unit_test(check_array_get_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_get_error_on_null_argument_ptr),
-            cmocka_unit_test(check_array_get_error_on_item_out_of_bounds),
-            cmocka_unit_test(check_array_get),
-            cmocka_unit_test(check_array_of_objects_error_on_null_argument_ptr),
-            cmocka_unit_test(check_array_of_objects),
-            cmocka_unit_test(check_array_sort_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_sort_error_on_null_argument_ptr),
-            cmocka_unit_test(check_array_sort),
-            cmocka_unit_test(check_array_insert_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_insert_error_on_invalid_value),
-            cmocka_unit_test(check_array_insert_error_on_out_of_bounds),
-            cmocka_unit_test(check_array_insert_last_item),
-            cmocka_unit_test(check_array_insert_first_item),
-            cmocka_unit_test(check_array_insert_no_capacity_increase),
-            cmocka_unit_test(check_array_insert_on_error_restore_count),
-            cmocka_unit_test(check_array_delete_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_delete_error_on_index_out_of_bounds),
-            cmocka_unit_test(check_array_delete),
-            cmocka_unit_test(check_array_add_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_add_error_on_invalid_value),
-            cmocka_unit_test(check_array_add),
-            cmocka_unit_test(check_array_add_error_capacity_limit_reached),
-            cmocka_unit_test(check_array_remove_error_on_null_object_ptr),
-            cmocka_unit_test(check_array_remove),
+            cmocka_unit_test(check_alloc_error_on_null_argument_ptr),
+            cmocka_unit_test(check_alloc),
+            cmocka_unit_test(check_init_error_on_null_object_ptr),
+            cmocka_unit_test(check_init),
+            cmocka_unit_test(check_init_empty),
+            cmocka_unit_test(check_retain_error_on_object_uninitialized),
+            cmocka_unit_test(check_release_error_on_object_uninitialized),
+            cmocka_unit_test(check_autorelease_error_on_object_uninitialized),
+            cmocka_unit_test(check_get_capacity_error_on_object_uninitialized),
+            cmocka_unit_test(check_get_count_error_on_object_uninitialized),
+            cmocka_unit_test(check_set_count_error_on_object_uninitialized),
+            cmocka_unit_test(check_get_size_error_on_object_uninitialized),
+            cmocka_unit_test(check_set_error_on_object_uninitialized),
+            cmocka_unit_test(check_get_error_on_object_uninitialized),
+            cmocka_unit_test(check_sort_error_on_object_uninitialized),
+            cmocka_unit_test(check_insert_error_on_object_uninitialized),
+            cmocka_unit_test(check_add_error_on_object_uninitialized),
+            cmocka_unit_test(check_delete_error_on_object_uninitialized),
+            cmocka_unit_test(check_remove_error_on_object_uninitialized),
+            cmocka_unit_test(check_retain_error_on_null_object_ptr),
+            cmocka_unit_test(check_release_error_on_null_object_ptr),
+            cmocka_unit_test(check_autorelease_error_on_null_object_ptr),
+            cmocka_unit_test(check_get_capacity_error_on_null_object_ptr),
+            cmocka_unit_test(check_get_capacity_error_on_null_argument_ptr),
+            cmocka_unit_test(check_get_capacity),
+            cmocka_unit_test(check_get_count_error_on_null_object_ptr),
+            cmocka_unit_test(check_get_count_error_on_null_argument_ptr),
+            cmocka_unit_test(check_get_count),
+            cmocka_unit_test(check_set_count_error_on_null_object_ptr),
+            cmocka_unit_test(check_set_count_error_on_memory_allocation),
+            cmocka_unit_test(check_set_count_to_zero),
+            cmocka_unit_test(check_set_count_to_lower_value),
+            cmocka_unit_test(check_set_count_to_higher_value),
+            cmocka_unit_test(check_set_count_no_change),
+            cmocka_unit_test(check_get_size_error_on_null_object_ptr),
+            cmocka_unit_test(check_get_size_error_on_null_argument_ptr),
+            cmocka_unit_test(check_get_size),
+            cmocka_unit_test(check_set_error_on_null_object_ptr),
+            cmocka_unit_test(check_set_error_on_item_out_of_bounds),
+            cmocka_unit_test(check_set_larger_size),
+            cmocka_unit_test(check_set),
+            cmocka_unit_test(check_get_error_on_null_object_ptr),
+            cmocka_unit_test(check_get_error_on_null_argument_ptr),
+            cmocka_unit_test(check_get_error_on_item_out_of_bounds),
+            cmocka_unit_test(check_get),
+            cmocka_unit_test(check_of_objects_error_on_null_argument_ptr),
+            cmocka_unit_test(check_of_objects),
+            cmocka_unit_test(check_sort_error_on_null_object_ptr),
+            cmocka_unit_test(check_sort_error_on_null_argument_ptr),
+            cmocka_unit_test(check_sort),
+            cmocka_unit_test(check_insert_error_on_null_object_ptr),
+            cmocka_unit_test(check_insert_error_on_invalid_value),
+            cmocka_unit_test(check_insert_error_on_out_of_bounds),
+            cmocka_unit_test(check_insert_last_item),
+            cmocka_unit_test(check_insert_first_item),
+            cmocka_unit_test(check_insert_no_capacity_increase),
+            cmocka_unit_test(check_insert_on_error_restore_count),
+            cmocka_unit_test(check_delete_error_on_null_object_ptr),
+            cmocka_unit_test(check_delete_error_on_index_out_of_bounds),
+            cmocka_unit_test(check_delete),
+            cmocka_unit_test(check_add_error_on_null_object_ptr),
+            cmocka_unit_test(check_add_error_on_invalid_value),
+            cmocka_unit_test(check_add),
+            cmocka_unit_test(check_add_error_capacity_limit_reached),
+            cmocka_unit_test(check_remove_error_on_null_object_ptr),
+            cmocka_unit_test(check_remove),
     };
     //cmocka_set_message_output(CM_OUTPUT_XML);
     return cmocka_run_group_tests(tests, NULL, NULL);

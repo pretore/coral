@@ -235,7 +235,7 @@ bool coral$array_get(struct coral_array *object,
 
 static thread_local struct coral_array *$this;
 
-static thread_local int (*$array_compare)(
+static thread_local int (*$compare)(
         const struct coral_array_item *,
         const struct coral_array_item *);
 
@@ -249,7 +249,7 @@ static int coral$array_compare(const void *a, const void *b) {
             .size = size,
             .data = (void *) b
     };
-    return $array_compare(&A, &B);
+    return $compare(&A, &B);
 }
 
 bool coral$array_sort(struct coral_array *object,
@@ -258,7 +258,7 @@ bool coral$array_sort(struct coral_array *object,
     coral_required(args);
     coral_required(args->compare);
     $this = object;
-    $array_compare = args->compare;
+    $compare = args->compare;
     qsort(object->data,
           object->count,
           object->size,
