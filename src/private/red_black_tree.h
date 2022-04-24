@@ -1,5 +1,5 @@
-#ifndef _CORAL_PRIVATE_RANGE_H_
-#define _CORAL_PRIVATE_RANGE_H_
+#ifndef _CORAL_PRIVATE_RED_BLACK_TREE_H_
+#define _CORAL_PRIVATE_RED_BLACK_TREE_H_
 
 #include <stddef.h>
 #include <stdint.h>
