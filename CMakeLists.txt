@@ -29,6 +29,7 @@ set(SOURCES
         src/private/object.h
         src/private/autorelease_pool.h
         src/private/range.h
+        src/private/red_black_tree.h
         src/private/reference.h
         src/private/weak_reference.h
         src/array.c
@@ -40,6 +41,7 @@ set(SOURCES
         src/object.c
         src/autorelease_pool.c
         src/range.c
+        src/red_black_tree.c
         src/reference.c
         src/weak_reference.c)
 
@@ -187,6 +189,20 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             PROPERTIES
                 LINK_FLAGS ${LINK_FLAGS})
     add_test(array-unit-test array-unit-test)
+    # red-black-tree-unit-test
+    add_executable(red-black-tree-unit-test test/test_red_black_tree.c)
+    target_include_directories(red-black-tree-unit-test
+            PRIVATE
+                "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>")
+    target_link_libraries(red-black-tree-unit-test
+            PRIVATE
+                coral
+                ${CMOCKA_SHARED_LIBRARY}
+                ${CMAKE_THREAD_LIBS_INIT})
+    set_target_properties(red-black-tree-unit-test
+            PROPERTIES
+                LINK_FLAGS ${LINK_FLAGS})
+    add_test(red-black-tree-unit-test red-black-tree-unit-test)
 else()
     # Shared Library
     add_library(coral SHARED "")
