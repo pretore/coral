@@ -2624,6 +2624,6 @@ int main(int argc, char *argv[]) {
             cmocka_unit_test(check_delete_node_with_two_children),
             cmocka_unit_test(check_tree)
     };
-    cmocka_set_message_output(CM_OUTPUT_XML);
+    //cmocka_set_message_output(CM_OUTPUT_XML);
     return cmocka_run_group_tests(tests, NULL, NULL);
 }
