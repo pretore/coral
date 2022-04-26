@@ -272,6 +272,7 @@ bool coral$red_black_tree$alloc(struct coral$red_black_tree **out);
  * node</u>.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if compare is <i>NULL</i>.
  */
 bool coral$red_black_tree$init(struct coral$red_black_tree *object,
                                int (*compare)(const void *first,
