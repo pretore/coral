@@ -13,6 +13,7 @@
 struct coral$tree_set {
     atomic_size_t id;
     size_t count;
+    size_t size;
     struct coral$red_black_tree tree;
 };
 
@@ -27,6 +28,7 @@ bool coral$tree_set$alloc(struct coral$tree_set **out);
 /**
  * @brief Initialise the tree set instance.
  * @param [in] object instance to be initialised.
+ * @param [in] size in bytes of the members of the set.
  * @param [in] compare comparison which must return an integer less than,
  * equal to, or greater than zero if the <u>first node</u> is considered
  * to be respectively less than, equal to, or greater than the <u>second
@@ -36,21 +38,22 @@ bool coral$tree_set$alloc(struct coral$tree_set **out);
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if compare is <i>NULL</i>.
  */
 bool coral$tree_set$init(struct coral$tree_set *object,
+                         size_t size,
                          int (*compare)(const void *first,
                                         const void *second));
 
 /**
  * @brief Invalidate the tree set instance.
  * <p>The items in the tree set are destroyed and each will invoke the
- * provided <i>on node destroy</i> callback. The actual <u>tree set instance
+ * provided <i>on destroy</i> callback. The actual <u>tree set instance
  * is not deallocated</u> since it may have been embedded in a larger structure.
  * @param [in] object instance to be invalidated.
- * @param [in] on_item_destroy called just before the item is to be destroyed.
+ * @param [in] on_destroy called just before the set member is to be destroyed.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  */
 bool coral$tree_set$invalidate(struct coral$tree_set *object,
-                               void (*on_item_destroy)(void *));
+                               void (*on_destroy)(void *));
 
 /**
  * @brief Retrieve the count of items in the tree set.
@@ -61,6 +64,16 @@ bool coral$tree_set$invalidate(struct coral$tree_set *object,
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
  */
 bool coral$tree_set$get_count(struct coral$tree_set *object, size_t *out);
+
+/**
+ * @brief Retrieve the size of a member of the set.
+ * @param [in] object instance whose member size we want to retrieve.
+ * @param [out] out receive the member size.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
+ */
+bool coral$tree_set$get_size(struct coral$tree_set *object, size_t *out);
 
 /**
  * @brief Insert item into tree set.
@@ -131,7 +144,7 @@ bool coral$tree_set$last(struct coral$tree_set *object, void **out);
  * @throws CORAL_ERROR_END_OF_SEQUENCE if there are no more values.
  */
 bool coral$tree_set$next(struct coral$tree_set *object, const void *value,
-        void **out);
+                         void **out);
 
 /**
  * @brief Retrieve the previous value.
@@ -145,7 +158,7 @@ bool coral$tree_set$next(struct coral$tree_set *object, const void *value,
  * @throws CORAL_ERROR_END_OF_SEQUENCE if there are no more values.
  */
 bool coral$tree_set$prev(struct coral$tree_set *object, const void *value,
-        void **out);
+                         void **out);
 
 struct coral$tree_set$iterator {
     size_t id;
@@ -169,7 +182,7 @@ bool coral$tree_set$iterator(struct coral$tree_set *object,
 /**
  * @brief Retrieve the next value.
  * @param [in] object iterator instance.
- * @param [in] out receive the next value.
+ * @param [out] out receive the next value.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
@@ -179,10 +192,10 @@ bool coral$tree_set$iterator(struct coral$tree_set *object,
  * over.
  */
 bool coral$tree_set$iterator_next(struct coral$tree_set$iterator *object,
-        void **out);
+                                  void **out);
 
 /**
- * @brief Delete the current value through the iterator instance.
+ * @brief Delete the current value.
  * @param [in] object iterator instance.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
