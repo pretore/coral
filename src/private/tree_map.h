@@ -221,14 +221,14 @@ struct coral$tree_map$iterator {
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
  * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
- * memory to allocate space for a tree set iterator instance.
+ * memory to allocate space for a tree map iterator instance.
  */
 bool coral$tree_map$iterator_alloc(struct coral$tree_map$iterator **out);
 
 /**
  * @brief Initialize tree map iterator.
  * @param [in] object instance to be initialised.
- * @param [in] tree_set instance of which we would like to iterate.
+ * @param [in] tree_map instance of which we would like to iterate.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if tree_map is <i>NULL</i>.
@@ -258,7 +258,7 @@ bool coral$tree_map$iterator_get_next(struct coral$tree_map$iterator *object,
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_INVALID_VALUE if the iterator is not referring to any
  * entries.
- * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the set has been modified since
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the map has been modified since
  * last use of the iterator.
  */
 bool coral$tree_map$iterator_delete(struct coral$tree_map$iterator *object);
