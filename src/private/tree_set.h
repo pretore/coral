@@ -30,9 +30,9 @@ bool coral$tree_set$alloc(struct coral$tree_set **out);
  * @param [in] object instance to be initialised.
  * @param [in] size in bytes of the members of the set.
  * @param [in] compare comparison which must return an integer less than,
- * equal to, or greater than zero if the <u>first node</u> is considered
+ * equal to, or greater than zero if the <u>first item</u> is considered
  * to be respectively less than, equal to, or greater than the <u>second
- * node</u>.
+ * item</u>.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if compare is <i>NULL</i>.
@@ -58,7 +58,7 @@ bool coral$tree_set$invalidate(struct coral$tree_set *object,
 /**
  * @brief Retrieve the count of items in the tree set.
  * @param [in] object instance whose count is to be retrieved.
- * @param [in] out receive the count.
+ * @param [out] out receive the count.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
@@ -140,7 +140,7 @@ bool coral$tree_set$last(struct coral$tree_set *object, void **out);
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if item or out is <i>NULL</i>.
- * @throws CORAL_ERROR_OBJECT_NOT_FOUND if the tree set it empty.
+ * @throws CORAL_ERROR_OBJECT_NOT_FOUND if the tree set is empty.
  * @throws CORAL_ERROR_END_OF_SEQUENCE if there are no more values.
  */
 bool coral$tree_set$next(struct coral$tree_set *object, const void *value,
@@ -154,7 +154,7 @@ bool coral$tree_set$next(struct coral$tree_set *object, const void *value,
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if item or out is <i>NULL</i>.
- * @throws CORAL_ERROR_OBJECT_NOT_FOUND if the tree set it empty.
+ * @throws CORAL_ERROR_OBJECT_NOT_FOUND if the tree set is empty.
  * @throws CORAL_ERROR_END_OF_SEQUENCE if there are no more values.
  */
 bool coral$tree_set$prev(struct coral$tree_set *object, const void *value,
@@ -167,17 +167,25 @@ struct coral$tree_set$iterator {
 };
 
 /**
- * @brief Create tree set iterator.
- * @param [in] object instance from which we will create an iterator.
- * @param [out] out receive the newly created iterator instance.
+ * @brief Allocate memory for tree set iterator instance.
+ * @param [out] out receive the allocated tree set iterator instance.
  * @return On success true, otherwise false if an error has occurred.
- * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
  * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
- * memory to create a iterator instance.
+ * memory to allocate space for a tree set iterator instance.
  */
-bool coral$tree_set$iterator(struct coral$tree_set *object,
-                             struct coral$tree_set$iterator **out);
+bool coral$tree_set$iterator_alloc(struct coral$tree_set$iterator **out);
+
+/**
+ * @brief Initialize tree set iterator.
+ * @param [in] object instance to be initialised.
+ * @param [in] tree_set instance of which we would like to iterate.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if tree_set is <i>NULL</i>.
+ */
+bool coral$tree_set$iterator_init(struct coral$tree_set$iterator *object,
+                                  struct coral$tree_set *tree_set);
 
 /**
  * @brief Retrieve the next value.
@@ -191,8 +199,8 @@ bool coral$tree_set$iterator(struct coral$tree_set *object,
  * @throws CORAL_ERROR_END_OF_SEQUENCE if there are no more values to iterate
  * over.
  */
-bool coral$tree_set$iterator_next(struct coral$tree_set$iterator *object,
-                                  void **out);
+bool coral$tree_set$iterator_get_next(struct coral$tree_set$iterator *object,
+                                      void **out);
 
 /**
  * @brief Delete the current value.
@@ -205,5 +213,13 @@ bool coral$tree_set$iterator_next(struct coral$tree_set$iterator *object,
  * last use of the iterator.
  */
 bool coral$tree_set$iterator_delete(struct coral$tree_set$iterator *object);
+
+/**
+ * @brief Invalidate the tree set instance.
+ * @param [in] object iterator instance.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ */
+bool coral$tree_set$iterator_invalidate(struct coral$tree_set$iterator *object);
 
 #endif /* _CORAL_PRIVATE_TREE_SET_H_ */

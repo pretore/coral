@@ -138,7 +138,7 @@ bool coral$tree_set$contains(struct coral$tree_set *object, const void *item,
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    if (!item | !out) {
+    if (!item || !out) {
         coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
         return false;
     }
@@ -222,25 +222,32 @@ bool coral$tree_set$prev(struct coral$tree_set *object, const void *value,
     return result;
 }
 
-bool coral$tree_set$iterator(struct coral$tree_set *object,
-                             struct coral$tree_set$iterator **out) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
+bool coral$tree_set$iterator_alloc(struct coral$tree_set$iterator **out) {
     if (!out) {
         coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
         return false;
     }
-    struct coral$tree_set$iterator *it = calloc(1, sizeof(*it));
-    if (!it) {
+    *out = calloc(1, sizeof(**out));
+    if (!*out) {
         coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
         return false;
     }
-    it->id = coral$atomic_load(&object->id);
-    it->tree_set = object;
-    *out = it;
-    return coral$red_black_tree$get_first(&object->tree, &it->data)
+    return true;
+}
+
+bool coral$tree_set$iterator_init(struct coral$tree_set$iterator *object,
+                                  struct coral$tree_set *tree_set) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!tree_set) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    object->id = coral$atomic_load(&tree_set->id);
+    object->tree_set = tree_set;
+    return coral$red_black_tree$get_first(&tree_set->tree, &object->data)
            || CORAL_ERROR_OBJECT_NOT_FOUND == coral_error;
 }
 
@@ -251,8 +258,8 @@ static bool coral$tree_set$iterator_check_if_container_modified(
     return id != object->id;
 }
 
-bool coral$tree_set$iterator_next(struct coral$tree_set$iterator *object,
-                                  void **out) {
+bool coral$tree_set$iterator_get_next(struct coral$tree_set$iterator *object,
+                                      void **out) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
@@ -298,5 +305,17 @@ bool coral$tree_set$iterator_delete(struct coral$tree_set$iterator *object) {
         object->data = NULL;
     }
     object->id += 1;
+    return true;
+}
+
+bool
+coral$tree_set$iterator_invalidate(struct coral$tree_set$iterator *object) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    object->id = 0;
+    object->tree_set = NULL;
+    object->data = NULL;
     return true;
 }

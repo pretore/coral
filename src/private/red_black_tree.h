@@ -260,6 +260,8 @@ struct coral$red_black_tree {
  * @param [out] out receive the allocated red black tree instance.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
+ * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
+ * memory to allocate space for a red black tree instance.
  */
 bool coral$red_black_tree$alloc(struct coral$red_black_tree **out);
 

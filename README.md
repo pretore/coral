@@ -7,7 +7,7 @@
 ## Collections:
 - coral_array - _dynamic memory allocated array_
 
-## Lifecycle:
+## Ownership:
 - coral_reference - _strong reference_
 - coral_weak_reference - _weak reference_
 - coral_context - _strong reference for C data types_

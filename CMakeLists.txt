@@ -31,6 +31,7 @@ set(SOURCES
         src/private/range.h
         src/private/red_black_tree.h
         src/private/reference.h
+        src/private/tree_map.h
         src/private/tree_set.h
         src/private/weak_reference.h
         src/array.c
@@ -44,6 +45,7 @@ set(SOURCES
         src/range.c
         src/red_black_tree.c
         src/reference.c
+        src/tree_map.c
         src/tree_set.c
         src/weak_reference.c)
 
@@ -219,6 +221,20 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             PROPERTIES
                 LINK_FLAGS ${LINK_FLAGS})
     add_test(tree-set-unit-test tree-set-unit-test)
+    # tree-map-unit-test
+    add_executable(tree-map-unit-test test/test_tree_map.c)
+    target_include_directories(tree-map-unit-test
+            PRIVATE
+                "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>")
+    target_link_libraries(tree-map-unit-test
+            PRIVATE
+                coral
+                ${CMOCKA_SHARED_LIBRARY}
+                ${CMAKE_THREAD_LIBS_INIT})
+    set_target_properties(tree-map-unit-test
+            PROPERTIES
+                LINK_FLAGS ${LINK_FLAGS})
+    add_test(tree-map-unit-test tree-map-unit-test)
 else()
     # Shared Library
     add_library(coral SHARED "")

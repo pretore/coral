@@ -38,10 +38,10 @@ static void check_init_error_on_null_object_ptr(void **state) {
 
 static void check_init_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral$tree_set$init((void *)1, 0, (void *)1));
+    assert_false(coral$tree_set$init((void *) 1, 0, (void *) 1));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral$tree_set$init((void *)1, 1, NULL));
+    assert_false(coral$tree_set$init((void *) 1, 1, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
@@ -89,16 +89,16 @@ static void check_get_count(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_get_size_error_on_null_object(void **state) {
+static void check_get_size_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral$tree_set$get_size(NULL, (void *)1));
+    assert_false(coral$tree_set$get_size(NULL, (void *) 1));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_get_size_error_on_null_argument(void **state) {
+static void check_get_size_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral$tree_set$get_size((void *)1, NULL));
+    assert_false(coral$tree_set$get_size((void *) 1, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
@@ -134,14 +134,14 @@ static void check_insert(void **state) {
     struct coral$tree_set *object;
     assert_true(coral$tree_set$alloc(&object));
     assert_true(coral$tree_set$init(
-            object, sizeof(size_t),coral_compare_size_t));
+            object, sizeof(size_t), coral_compare_size_t));
     size_t i = 876;
     assert_int_equal(0, coral$atomic_load(&object->id));
     assert_int_equal(0, object->count);
     assert_true(coral$tree_set$insert(object, &i));
     assert_int_equal(1, coral$atomic_load(&object->id));
     assert_int_equal(1, object->count);
-    assert_int_equal(i, *(size_t*)object->tree.root);
+    assert_int_equal(i, *(size_t *) object->tree.root);
     assert_true(coral$tree_set$invalidate(object, NULL));
     assert_int_equal(0, object->count);
     free(object);
@@ -153,7 +153,7 @@ static void check_insert_large_value(void **state) {
     const size_t size = 4 * sizeof(void *);
     struct coral$tree_set *object;
     assert_true(coral$tree_set$alloc(&object));
-    assert_true(coral$tree_set$init(object, size,coral_compare_size_t));
+    assert_true(coral$tree_set$init(object, size, coral_compare_size_t));
     assert_int_equal(0, coral$atomic_load(&object->id));
     assert_int_equal(0, object->count);
     assert_true(coral$tree_set$insert(object, check_insert_large_value));
@@ -171,7 +171,7 @@ static void check_insert_error_on_object_already_exists(void **state) {
     struct coral$tree_set *object;
     assert_true(coral$tree_set$alloc(&object));
     assert_true(coral$tree_set$init(
-            object, sizeof(size_t),coral_compare_size_t));
+            object, sizeof(size_t), coral_compare_size_t));
     const size_t i = 20;
     assert_int_equal(0, coral$atomic_load(&object->id));
     assert_int_equal(0, object->count);
@@ -196,7 +196,7 @@ static void check_insert_large_value_on_object_already_exists(void **state) {
     const size_t size = 4 * sizeof(void *);
     struct coral$tree_set *object;
     assert_true(coral$tree_set$alloc(&object));
-    assert_true(coral$tree_set$init(object, size,coral_compare_size_t));
+    assert_true(coral$tree_set$init(object, size, coral_compare_size_t));
     assert_int_equal(0, coral$atomic_load(&object->id));
     assert_int_equal(0, object->count);
     assert_true(coral$tree_set$insert(
@@ -408,6 +408,7 @@ static void check_next_error_on_object_not_found(void **state) {
             object, sizeof(size_t), coral_compare_size_t));
     size_t i = 9;
     assert_false(coral$tree_set$next(object, (const void *) i, (void **) &i));
+    assert_int_equal(CORAL_ERROR_OBJECT_NOT_FOUND, coral_error);
     assert_true(coral$tree_set$invalidate(object, NULL));
     free(object);
     coral_error = CORAL_ERROR_NONE;
@@ -472,6 +473,7 @@ static void check_prev_error_on_object_not_found(void **state) {
             object, sizeof(size_t), coral_compare_size_t));
     size_t i = 9;
     assert_false(coral$tree_set$prev(object, (const void *) i, (void **) &i));
+    assert_int_equal(CORAL_ERROR_OBJECT_NOT_FOUND, coral_error);
     assert_true(coral$tree_set$invalidate(object, NULL));
     free(object);
     coral_error = CORAL_ERROR_NONE;
@@ -511,69 +513,74 @@ static void check_prev(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_iterator_error_on_null_object_ptr(void **state) {
+static void check_iterator_alloc_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral$tree_set$iterator(NULL, (void *) 1));
-    assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
-    coral_error = CORAL_ERROR_NONE;
-}
-
-static void check_iterator_error_on_null_argument_ptr(void **state) {
-    coral_error = CORAL_ERROR_NONE;
-    assert_false(coral$tree_set$iterator((void *) 1, NULL));
+    assert_false(coral$tree_set$iterator_alloc(NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_iterator(void **state) {
+static void check_iterator_init_error_on_null_object_ptr(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral$tree_set$iterator_init(NULL, (void *) 1));
+    assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_iterator_init_error_on_null_argument_ptr(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral$tree_set$iterator_init((void *) 1, NULL));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_iterator_init(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral$tree_set *object;
     assert_true(coral$tree_set$alloc(&object));
     assert_true(coral$tree_set$init(
             object, sizeof(size_t), coral_compare_size_t));
-    struct coral$tree_set$iterator *iterator;
-    assert_true(coral$tree_set$iterator(object, &iterator));
-    assert_int_equal(0, iterator->id);
-    assert_ptr_equal(iterator->tree_set, object);
-    assert_null(iterator->data);
-    free(iterator);
+    struct coral$tree_set$iterator iterator = {};
+    assert_true(coral$tree_set$iterator_init(&iterator, object));
+    assert_int_equal(0, iterator.id);
+    assert_ptr_equal(iterator.tree_set, object);
+    assert_null(iterator.data);
     assert_true(coral$tree_set$invalidate(object, NULL));
     free(object);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_iterator_next_error_on_null_object_ptr(void **state) {
+static void check_iterator_get_next_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral$tree_set$iterator_next(NULL, (void *)1));
+    assert_false(coral$tree_set$iterator_get_next(NULL, (void *) 1));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_iterator_next_error_on_argument_ptr(void **state) {
+static void check_iterator_get_next_error_on_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral$tree_set$iterator_next((void *)1, NULL));
+    assert_false(coral$tree_set$iterator_get_next((void *) 1, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_iterator_next_error_on_end_of_sequence(void **state) {
+static void check_iterator_get_next_error_on_end_of_sequence(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral$tree_set *object;
     assert_true(coral$tree_set$alloc(&object));
     assert_true(coral$tree_set$init(
             object, sizeof(size_t), coral_compare_size_t));
-    struct coral$tree_set$iterator *iterator;
-    assert_true(coral$tree_set$iterator(object, &iterator));
+    struct coral$tree_set$iterator iterator = {};
+    assert_true(coral$tree_set$iterator_init(&iterator, object));
     size_t i;
-    assert_false(coral$tree_set$iterator_next(iterator, (void **) &i));
+    assert_false(coral$tree_set$iterator_get_next(&iterator, (void **) &i));
     assert_int_equal(CORAL_ERROR_END_OF_SEQUENCE, coral_error);
-    free(iterator);
     assert_true(coral$tree_set$invalidate(object, NULL));
     free(object);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_iterator_next_error_on_object_unavailable(void **state) {
+static void check_iterator_get_next_error_on_object_unavailable(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral$tree_set *object;
     assert_true(coral$tree_set$alloc(&object));
@@ -581,18 +588,17 @@ static void check_iterator_next_error_on_object_unavailable(void **state) {
             object, sizeof(size_t), coral_compare_size_t));
     size_t i = 8;
     assert_true(coral$tree_set$insert(object, &i));
-    struct coral$tree_set$iterator *iterator;
-    assert_true(coral$tree_set$iterator(object, &iterator));
+    struct coral$tree_set$iterator iterator = {};
+    assert_true(coral$tree_set$iterator_init(&iterator, object));
     assert_true(coral$tree_set$delete(object, &i));
-    assert_false(coral$tree_set$iterator_next(iterator, (void **) &i));
+    assert_false(coral$tree_set$iterator_get_next(&iterator, (void **) &i));
     assert_int_equal(CORAL_ERROR_OBJECT_UNAVAILABLE, coral_error);
-    free(iterator);
     assert_true(coral$tree_set$invalidate(object, NULL));
     free(object);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_iterator_next(void **state) {
+static void check_iterator_get_next(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral$tree_set *object;
     assert_true(coral$tree_set$alloc(&object));
@@ -602,16 +608,15 @@ static void check_iterator_next(void **state) {
     assert_true(coral$tree_set$insert(object, &i));
     i = 1;
     assert_true(coral$tree_set$insert(object, &i));
-    struct coral$tree_set$iterator *iterator;
-    assert_true(coral$tree_set$iterator(object, &iterator));
+    struct coral$tree_set$iterator iterator = {};
+    assert_true(coral$tree_set$iterator_init(&iterator, object));
     i = 4;
-    assert_true(coral$tree_set$iterator_next(iterator, (void **) &i));
+    assert_true(coral$tree_set$iterator_get_next(&iterator, (void **) &i));
     assert_int_equal(i, 1);
-    assert_true(coral$tree_set$iterator_next(iterator, (void **) &i));
+    assert_true(coral$tree_set$iterator_get_next(&iterator, (void **) &i));
     assert_int_equal(i, 8);
-    assert_false(coral$tree_set$iterator_next(iterator, (void **) &i));
+    assert_false(coral$tree_set$iterator_get_next(&iterator, (void **) &i));
     assert_int_equal(CORAL_ERROR_END_OF_SEQUENCE, coral_error);
-    free(iterator);
     assert_true(coral$tree_set$invalidate(object, NULL));
     free(object);
     coral_error = CORAL_ERROR_NONE;
@@ -638,14 +643,13 @@ static void check_iterator_delete_error_on_object_unavailable(void **state) {
     assert_true(coral$tree_set$alloc(&object));
     assert_true(coral$tree_set$init(
             object, sizeof(size_t), coral_compare_size_t));
-    struct coral$tree_set$iterator *iterator;
-    assert_true(coral$tree_set$iterator(object, &iterator));
+    struct coral$tree_set$iterator iterator = {};
+    assert_true(coral$tree_set$iterator_init(&iterator, object));
     size_t i = 1;
     assert_true(coral$tree_set$insert(object, &i));
-    iterator->data = (void *) 1;
-    assert_false(coral$tree_set$iterator_delete(iterator));
+    iterator.data = (void *) 1;
+    assert_false(coral$tree_set$iterator_delete(&iterator));
     assert_int_equal(CORAL_ERROR_OBJECT_UNAVAILABLE, coral_error);
-    free(iterator);
     assert_true(coral$tree_set$invalidate(object, NULL));
     free(object);
     coral_error = CORAL_ERROR_NONE;
@@ -659,17 +663,35 @@ static void check_iterator_delete(void **state) {
             object, sizeof(size_t), coral_compare_size_t));
     size_t i = 8;
     assert_true(coral$tree_set$insert(object, &i));
-    struct coral$tree_set$iterator *iterator;
-    assert_true(coral$tree_set$iterator(object, &iterator));
-    assert_int_equal(8, *(size_t*)object->tree.root);
-    assert_true(coral$tree_set$iterator_delete(iterator));
+    struct coral$tree_set$iterator iterator = {};
+    assert_true(coral$tree_set$iterator_init(&iterator, object));
+    assert_int_equal(8, *(size_t *) object->tree.root);
+    assert_true(coral$tree_set$iterator_delete(&iterator));
     assert_null(object->tree.root);
-    assert_null(iterator->data);
+    assert_null(iterator.data);
     assert_int_equal(2, object->id);
-    assert_int_equal(2, iterator->id);
-    free(iterator);
+    assert_int_equal(2, iterator.id);
     assert_true(coral$tree_set$invalidate(object, NULL));
     free(object);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_iterator_invalidate_error_on_object_null_ptr(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral$tree_set$iterator_invalidate(NULL));
+    assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_iterator_invalidate(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral$tree_set$iterator iterator = {
+            .id = ~0,
+            .data = (void *) ~0
+    };
+    assert_true(coral$tree_set$iterator_invalidate(&iterator));
+    assert_int_equal(iterator.id, 0);
+    assert_int_equal(iterator.data, 0);
     coral_error = CORAL_ERROR_NONE;
 }
 
@@ -684,8 +706,8 @@ int main(int argc, char *argv[]) {
             cmocka_unit_test(check_get_count_error_on_null_object_ptr),
             cmocka_unit_test(check_get_count_error_on_null_argument_ptr),
             cmocka_unit_test(check_get_count),
-            cmocka_unit_test(check_get_size_error_on_null_object),
-            cmocka_unit_test(check_get_size_error_on_null_argument),
+            cmocka_unit_test(check_get_size_error_on_null_object_ptr),
+            cmocka_unit_test(check_get_size_error_on_null_argument_ptr),
             cmocka_unit_test(check_get_size),
             cmocka_unit_test(check_insert_error_on_null_object_ptr),
             cmocka_unit_test(check_insert_error_on_null_argument_ptr),
@@ -718,18 +740,21 @@ int main(int argc, char *argv[]) {
             cmocka_unit_test(check_prev_error_on_object_not_found),
             cmocka_unit_test(check_prev_error_on_end_of_sequence),
             cmocka_unit_test(check_prev),
-            cmocka_unit_test(check_iterator_error_on_null_object_ptr),
-            cmocka_unit_test(check_iterator_error_on_null_argument_ptr),
-            cmocka_unit_test(check_iterator),
-            cmocka_unit_test(check_iterator_next_error_on_null_object_ptr),
-            cmocka_unit_test(check_iterator_next_error_on_argument_ptr),
-            cmocka_unit_test(check_iterator_next_error_on_end_of_sequence),
-            cmocka_unit_test(check_iterator_next_error_on_object_unavailable),
-            cmocka_unit_test(check_iterator_next),
+            cmocka_unit_test(check_iterator_alloc_error_on_null_argument_ptr),
+            cmocka_unit_test(check_iterator_init_error_on_null_object_ptr),
+            cmocka_unit_test(check_iterator_init_error_on_null_argument_ptr),
+            cmocka_unit_test(check_iterator_init),
+            cmocka_unit_test(check_iterator_get_next_error_on_null_object_ptr),
+            cmocka_unit_test(check_iterator_get_next_error_on_argument_ptr),
+            cmocka_unit_test(check_iterator_get_next_error_on_end_of_sequence),
+            cmocka_unit_test(check_iterator_get_next_error_on_object_unavailable),
+            cmocka_unit_test(check_iterator_get_next),
             cmocka_unit_test(check_iterator_delete_error_on_null_object_ptr),
             cmocka_unit_test(check_iterator_delete_error_on_invalid_value),
             cmocka_unit_test(check_iterator_delete_error_on_object_unavailable),
             cmocka_unit_test(check_iterator_delete),
+            cmocka_unit_test(check_iterator_invalidate_error_on_object_null_ptr),
+            cmocka_unit_test(check_iterator_invalidate),
     };
     //cmocka_set_message_output(CM_OUTPUT_XML);
     return cmocka_run_group_tests(tests, NULL, NULL);
