@@ -3,13 +3,6 @@
 
 #include <stddef.h>
 
-struct coral_object;
-
-struct coral$autorelease_pool_entry {
-    struct coral$autorelease_pool_entry *next;
-    void *object;
-};
-
 void coral$autorelease_pool_start();
 
 void coral$autorelease_pool_end();

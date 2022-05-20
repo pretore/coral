@@ -8,6 +8,11 @@
 
 #pragma mark private
 
+struct coral$autorelease_pool_entry {
+    struct coral$autorelease_pool_entry *next;
+    void *object;
+};
+
 static thread_local struct coral$autorelease_pool_entry *$pool = NULL;
 static thread_local struct coral$autorelease_pool_entry *$stack = NULL;
 

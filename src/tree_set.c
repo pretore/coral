@@ -106,14 +106,6 @@ bool coral$tree_set$insert(struct coral$tree_set *object, const void *item) {
     return result;
 }
 
-static void coral$tree_set$delete_item(struct coral$tree_set *object,
-                                       void *item) {
-    coral_required_true(coral$red_black_tree$delete(
-            &object->tree, item));
-    atomic_fetch_add(&object->id, 1);
-    object->count -= 1;
-}
-
 bool coral$tree_set$delete(struct coral$tree_set *object, const void *item) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
@@ -128,7 +120,10 @@ bool coral$tree_set$delete(struct coral$tree_set *object, const void *item) {
                                      &node)) {
         return false;
     }
-    coral$tree_set$delete_item(object, node);
+    coral_required_true(coral$red_black_tree$delete(
+            &object->tree, node));
+    atomic_fetch_add(&object->id, 1);
+    object->count -= 1;
     return true;
 }
 
@@ -222,100 +217,3 @@ bool coral$tree_set$prev(struct coral$tree_set *object, const void *value,
     return result;
 }
 
-bool coral$tree_set$iterator_alloc(struct coral$tree_set$iterator **out) {
-    if (!out) {
-        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
-        return false;
-    }
-    *out = calloc(1, sizeof(**out));
-    if (!*out) {
-        coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
-        return false;
-    }
-    return true;
-}
-
-bool coral$tree_set$iterator_init(struct coral$tree_set$iterator *object,
-                                  struct coral$tree_set *tree_set) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
-    if (!tree_set) {
-        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
-        return false;
-    }
-    object->id = coral$atomic_load(&tree_set->id);
-    object->tree_set = tree_set;
-    return coral$red_black_tree$get_first(&tree_set->tree, &object->data)
-           || CORAL_ERROR_OBJECT_NOT_FOUND == coral_error;
-}
-
-static bool coral$tree_set$iterator_check_if_container_modified(
-        struct coral$tree_set$iterator *object) {
-    coral_required(object);
-    const size_t id = coral$atomic_load(&object->tree_set->id);
-    return id != object->id;
-}
-
-bool coral$tree_set$iterator_get_next(struct coral$tree_set$iterator *object,
-                                      void **out) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
-    if (!out) {
-        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
-        return false;
-    }
-    if (!object->data) {
-        coral_error = CORAL_ERROR_END_OF_SEQUENCE;
-        return false;
-    }
-    if (coral$tree_set$iterator_check_if_container_modified(object)) {
-        coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
-        return false;
-    }
-    memcpy(out, object->data, object->tree_set->size);
-    bool result = coral$red_black_tree$get_next(object->data, &object->data);
-    if (!result) {
-        result = NULL != object->data;
-        object->data = NULL;
-    }
-    return result;
-}
-
-bool coral$tree_set$iterator_delete(struct coral$tree_set$iterator *object) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
-    if (!object->data) {
-        coral_error = CORAL_ERROR_INVALID_VALUE;
-        return false;
-    }
-    if (coral$tree_set$iterator_check_if_container_modified(object)) {
-        coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
-        return false;
-    }
-    void *node = object->data;
-    coral$red_black_tree$get_next(object->data, &object->data);
-    coral$tree_set$delete_item(object->tree_set, node);
-    if (node == object->data) {
-        object->data = NULL;
-    }
-    object->id += 1;
-    return true;
-}
-
-bool
-coral$tree_set$iterator_invalidate(struct coral$tree_set$iterator *object) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
-    object->id = 0;
-    object->tree_set = NULL;
-    object->data = NULL;
-    return true;
-}

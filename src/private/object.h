@@ -7,26 +7,18 @@
 #include <stdatomic.h>
 
 struct coral_object {
+    struct coral_class *class;
     atomic_size_t ref_count;
+    struct coral_object *copy_of;
+    size_t size;
+    size_t checksum;
     // FIXME: Implement observer pattern for events ...
-    void (*on_destroy)(void *);
 };
-
-bool coral$object_alloc(size_t size, void **out);
-
-bool coral$object_init(void *object, void (*on_destroy)(void *));
-
-void coral$object_destroy(void *object);
-
-bool coral$object_retain(void *object, void *);
-
-bool coral$object_release(void *object, void *);
 
 struct coral_object *coral$object_from(void *object);
 
 void *coral$object_to(struct coral_object *object);
 
-void (*coral$object_get_on_destroy(struct coral_object *object))(void *);
 
 void
 coral$object_add_observer(struct coral_object *object, void *observer,

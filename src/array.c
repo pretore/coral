@@ -4,433 +4,1059 @@
 #include <coral.h>
 
 #include "private/array.h"
+#include "private/coral.h"
+#include "private/class.h"
 #include "test/cmocka.h"
 
-#pragma mark private
+#pragma mark private -
 
-static struct coral_ref *$capacity_range_ref;
+static struct coral_range *$limit;
+static struct coral_class *$class;
+static struct coral_class *$class$search_pattern;
+
+#pragma mark + invokables
+
+static bool $array_destroy(struct coral_array *this,
+                           void *data,
+                           void *args);
+
+static bool $array_is_equal(void *this,
+                            struct coral_array *data,
+                            struct is_equal_args *args);
+
+static bool $array_copy(void *this,
+                        struct coral_array *data,
+                        struct copy_args *args);
+
+
+static bool $array$search_pattern$destroy(
+        struct coral_array_search_pattern *this,
+        void *data,
+        void *args);
 
 __attribute__((constructor))
-static void coral$array_load() {
-    struct coral_range *range;
-    struct coral_range_values values = {
-            .first = 16,
-            .last = SIZE_MAX
+static void $on_load() {
+    struct coral_range_values value = {0, SIZE_MAX};
+    coral_required_true(coral_range_of_rate(&$limit, value, 1.5));
+    coral_required_true(coral_range_retain($limit));
+
+    struct coral_class_method_name $method_names[] = {
+            {destroy,  strlen(destroy)},
+            {is_equal, strlen(is_equal)},
+            {copy,     strlen(copy)},
     };
-    coral_required_true(coral_range_of_rate(&range, &values, 1.5));
-    coral_required_true(coral_set_ref(&$capacity_range_ref, range));
+    /* class for array */
+    coral_required_true(coral_class_alloc(&$class));
+    coral_required_true(coral_class_init($class));
+    coral_required_true(coral_class_retain($class));
+    /* destroy */
+    coral_required_true(coral_class_method_add(
+            $class, &$method_names[0],
+            (coral_invokable_t) $array_destroy));
+    /* is_equal */
+    coral_required_true(coral_class_method_add(
+            $class, &$method_names[1],
+            (coral_invokable_t) $array_is_equal));
+    /* copy */
+    coral_required_true(coral_class_method_add(
+            $class, &$method_names[2],
+            (coral_invokable_t) $array_copy));
+
+    /* class for search_pattern */
+    coral_required_true(coral_class_alloc(&$class$search_pattern));
+    coral_required_true(coral_class_init($class$search_pattern));
+    coral_required_true(coral_class_retain($class$search_pattern));
+    /* destroy */
+    coral_required_true(coral_class_method_add(
+            $class$search_pattern, &$method_names[0],
+            (coral_invokable_t) $array$search_pattern$destroy));
+
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor()))
-static void coral$array_unload() {
-    coral_required_true(coral_clear_ref(&$capacity_range_ref));
+__attribute__((destructor))
+static void $on_unload() {
+    coral_required_true(coral_range_release($limit));
+    coral_required_true(coral_object_destroy($class$search_pattern));
+    coral_required_true(coral_object_destroy($class));
+
     coral_autorelease_pool_drain();
 }
 
-bool coral$array_adjust_size_if_needed(struct coral_array *object,
-                                       const size_t size) {
-    coral_required(object);
-    size_t size_ = 0;
-    coral_required_true(coral_maximum_size_t(
-            object->size, size, &size_));
-    if (object->size == size) {
+bool coral$array$init(struct coral$array *object,
+                      struct coral_range *limit,
+                      const size_t count,
+                      const size_t size) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!limit) {
+        limit = $limit;
+    }
+    if (!coral_set_reference(&object->limit_ref, limit)) {
+        coral_required_true(CORAL_ERROR_ARGUMENT_PTR_IS_NULL != coral_error);
+        return false;
+    }
+    coral$atomic_store(&object->id, 0);
+    object->size = size;
+    object->data = NULL;
+    size_t minimum;
+    coral_required_true(coral_range_get_minimum(limit, &minimum));
+    return coral$array$set_capacity(object, minimum)
+           && coral$array$set_count(object, count);
+}
+
+bool coral$array$invalidate(struct coral$array *object,
+                            void (*on_destroy)(void *, const size_t)) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (on_destroy) {
+        for (size_t i = 0; i < object->count; i++) {
+            on_destroy(object->data + (object->size * i), object->size);
+        }
+    }
+    coral_required_true(coral_clear_reference(&object->limit_ref));
+    object->size = 0;
+    object->count = 0;
+    object->capacity = 0;
+    free(object->data);
+    object->data = NULL;
+    atomic_fetch_add(&object->id, 1);
+    return true;
+}
+
+bool coral$array$get_capacity(struct coral$array *object, size_t *out) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    *out = object->capacity;
+    return true;
+}
+
+bool coral$array$set_capacity(struct coral$array *object, size_t capacity) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    /* case 0: no change in capacity */
+    if (object->capacity == capacity) {
         return true;
     }
-    if (!coral_multiply_size_t(object->capacity, size, &size_)) {
+    bool result;
+    struct coral_range *range;
+    coral_required_true(coral_reference_get(object->limit_ref,
+                                            (void **) &range));
+    coral_required_true(coral_range_is_inclusive(range, capacity, &result));
+    if (!result) {
+        coral_error = CORAL_ERROR_INVALID_VALUE;
+        return false;
+    }
+    /* case 1: we decrease capacity below count */
+    if (object->count > capacity) {
+        object->capacity = capacity;
+        object->count = capacity;
+        atomic_fetch_add(&object->id, 1);
+        return true;
+    }
+    /* case 2: we increase capacity and need to perform a re-alloc */
+    size_t size;
+    void *data = NULL;
+    if (!coral_multiply_size_t(capacity, object->size, &size)
+        || (size && !(data = realloc(object->data, size)))) {
         coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
         return false;
     }
-    unsigned char *data = realloc(object->data, size_);
-    if (!data) {
+    object->capacity = capacity;
+    object->data = data;
+    atomic_fetch_add(&object->id, 1);
+    return true;
+}
+
+bool coral$array$get_count(struct coral$array *object, size_t *out) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    *out = object->count;
+    return true;
+}
+
+bool coral$array$set_count(struct coral$array *object, size_t count) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (count >= object->capacity) {
+        size_t capacity;
+        struct coral_range *range = NULL;
+        coral_required_true(coral_reference_get(
+                object->limit_ref, (void **) &range));
+        coral_required(range);
+        if (!coral_range_get_next(range, count, &capacity)) {
+            if (CORAL_ERROR_END_OF_SEQUENCE == coral_error) {
+                capacity = count;
+            } else {
+                if (CORAL_ERROR_INVALID_VALUE != coral_error) {
+                    coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
+                }
+                return false;
+            }
+        }
+        if (!coral$array$set_capacity(object, capacity)) {
+            return false;
+        }
+    }
+    if (count > object->count) {
+        memset(object->data + (object->count * object->size), 0,
+               (count - object->count) * object->size);
+    }
+    object->count = count;
+    atomic_fetch_add(&object->id, 1);
+    return true;
+}
+
+static bool coral$array$set_size(struct coral$array *object,
+                                 const size_t size) {
+    coral_required(object);
+    if (size <= object->size) {
+        return true;
+    }
+    size_t size_;
+    void *data;
+    if (!coral_multiply_size_t(object->capacity, size, &size_)
+        || !(data = realloc(object->data, size_))) {
         coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
         return false;
     }
     object->data = data;
-    for (size_t i = 0, limit = object->count - 1; i < limit; i++) {
-        const size_t index = object->count - 1 - i;
-        const unsigned char *src = data + (index * object->size);
-        unsigned char *dst = data + (index * size);
+    for (size_t i = object->count; i; i--) {
+        unsigned char *src = object->data + (object->size * (i - 1));
+        unsigned char *dst = object->data + (size * (i - 1));
         memmove(dst, src, object->size);
     }
     object->size = size;
     return true;
 }
 
-bool coral$array_adjust_capacity_if_needed(struct coral_array *object,
-                                           const size_t capacity) {
-    coral_required(object);
-    size_t capacity_;
-    coral_required_true(coral_maximum_size_t(
-            object->capacity, capacity, &capacity_));
-    if (object->capacity == capacity_) {
-        return true;
-    }
-    size_t size_;
-    if (!coral_multiply_size_t(object->size, capacity_, &size_)) {
-        coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
-        return false;
-    }
-    unsigned char *data = realloc(object->data, size_);
-    if (!data) {
-        coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
-        return false;
-    }
-    object->data = data;
-    object->capacity = capacity_;
-    return true;
-}
-
-bool coral$array_set_item_at(struct coral_array *object,
-                             const size_t at,
-                             const struct coral_array_item *item) {
-    coral_required(object);
-    coral_required_true(object->capacity > at);
-    if (item) {
-        size_t size_ = 0;
-        coral_required_true(coral_maximum_size_t(
-                object->size, item->size, &size_));
-        if (!coral$array_adjust_size_if_needed(object, size_)) {
-            return false;
-        }
-    }
-    unsigned char *dst = object->data + (object->size * at);
-    if (item) {
-        memcpy(dst, item->data, item->size);
-    } else {
-        memset(dst, 0, object->size);
-    }
-    return true;
-}
-
-bool coral$array_init(struct coral_array *object,
-                      size_t count,
-                      size_t size,
-                      struct coral_range *capacity_range) {
-    coral_required(object);
-    if (!capacity_range) {
-        coral_required_true(coral_ref_get($capacity_range_ref,
-                                          (void **) &capacity_range));
-    }
-    struct coral_range_values values;
-    if (!coral_range_get(capacity_range, &values)
-        || values.last < count) {
-        coral_error = CORAL_ERROR_INVALID_VALUE;
-        return false;
-    }
-    size_t current_;
-    size_t capacity_;
-    if (!coral_maximum_size_t(values.first, count, &current_)
-        || !coral_range_get_next(capacity_range,
-                                 current_,
-                                 &capacity_)) {
-        coral_error = CORAL_ERROR_CAPACITY_LIMIT_REACHED;
-        return false;
-    }
-    size_t size_;
-    if (!coral_multiply_size_t(size, capacity_, &size_)) {
-        coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
-        return false;
-    }
-    object->data = calloc(1, size_);
-    if (size_ && !object->data) {
-        coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
-        return false;
-    }
-    object->size = size;
-    object->count = count;
-    object->capacity = capacity_;
-    return coral_object_init(object, (void (*)(void *)) coral$array_destroy)
-           && coral_set_ref(&object->capacity_range_ref, capacity_range);
-}
-
-void coral$array_destroy(struct coral_array *object) {
-    coral_required(object);
-    free(object->data);
-    object->data = NULL;
-    coral_required_true(coral_clear_ref(&object->capacity_range_ref));
-    coral_required_true(coral_object_destroy(object));
-}
-
-bool coral$array_get_capacity(struct coral_array *object,
-                              struct coral$array_get_capacity_args *args) {
-    coral_required(object);
-    coral_required(args);
-    coral_required(args->out);
-    struct coral_range *capacity;
-    return coral_ref_get(object->capacity_range_ref, (void **) &capacity)
-           && coral_range_get(capacity, args->out);
-}
-
-bool coral$array_get_count(struct coral_array *object,
-                           struct coral$array_get_count_args *args) {
-    coral_required(object);
-    coral_required(args);
-    coral_required(args->out);
-    *args->out = object->count;
-    return true;
-}
-
-bool coral$array_set_count(struct coral_array *object,
-                           struct coral$array_set_count_args *args) {
-    coral_required(object);
-    coral_required(args);
-    if (object->count == args->count) {
-        return true;
-    }
-    // TODO: on container decrease ...
-    if (object->capacity < args->count) {
-        size_t capacity_;
-        struct coral_range *capacity_range;
-        if (!coral_ref_get(object->capacity_range_ref,
-                           (void **) &capacity_range)
-            || coral_range_get_next(capacity_range,
-                                    args->count,
-                                    &capacity_)) {
-            coral_error = CORAL_ERROR_CAPACITY_LIMIT_REACHED;
-            return false;
-        }
-        if (!coral$array_adjust_capacity_if_needed(object, capacity_)) {
-            return false;
-        }
-    }
-    object->count = args->count;
-    return true;
-}
-
-bool coral$array_get_size(struct coral_array *object,
-                          struct coral$array_get_size_args *args) {
-    coral_required(object);
-    coral_required(args);
-    coral_required(args->out);
-    *args->out = object->size;
-    return true;
-}
-
-bool coral$array_set(struct coral_array *object,
-                     struct coral$array_set_args *args) {
-    coral_required(object);
-    coral_required(args);
-    if (object->count <= args->at) {
-        coral_error = CORAL_ERROR_INDEX_OUT_OF_BOUNDS;
-        return false;
-    }
-    return coral$array_set_item_at(object, args->at, args->item);
-}
-
-bool coral$array_get(struct coral_array *object,
-                     struct coral$array_get_args *args) {
-    coral_required(object);
-    coral_required(args);
-    coral_required(args->item);
-    if (object->count <= args->at) {
-        coral_error = CORAL_ERROR_INDEX_OUT_OF_BOUNDS;
-        return false;
-    }
-    struct coral_array_item *item = args->item;
-    item->size = object->size;
-    item->data = object->data + (args->at * object->size);
-    return true;
-}
-
-static thread_local struct coral_array *$this;
-
-static thread_local int (*$compare)(
-        const struct coral_array_item *,
-        const struct coral_array_item *);
-
-static int coral$array_compare(const void *a, const void *b) {
-    const size_t size = $this->size;
-    struct coral_array_item A = {
-            .size = size,
-            .data = (void *) a
-    };
-    struct coral_array_item B = {
-            .size = size,
-            .data = (void *) b
-    };
-    return $compare(&A, &B);
-}
-
-bool coral$array_sort(struct coral_array *object,
-                      struct coral$array_sort_args *args) {
-    coral_required(object);
-    coral_required(args);
-    coral_required(args->compare);
-    $this = object;
-    $compare = args->compare;
-    qsort(object->data,
-          object->count,
-          object->size,
-          coral$array_compare);
-    return true;
-}
-
-bool coral$array_find(struct coral_array *object,
-                      struct coral$array_find_args *args) {
-    coral_required(object);
-    coral_required(args);
-    coral_required(args->needle);
-    coral_required(args->is_equals);
-    coral_required(args->out);
-    if (!object->count) {
-        coral_error = CORAL_ERROR_OBJECT_NOT_FOUND;
-        return false;
-    }
-    struct coral_range *range = (struct coral_range *) args->range;
-    if (!range) {
-        struct coral_range_values values = {
-                .first = 0,
-                .last = object->count - 1
-        };
-        if (!coral_range_of_delta(&range, &values, 1)) {
-            return false;
-        }
-    }
-    size_t at;
-    struct coral_array_item item;
-    if (!coral_range_get_min(range, &at)) {
-        return false;
-    }
-    do {
-        if (!coral_array_get(object, at, &item)) {
-            coral_error = CORAL_ERROR_OBJECT_NOT_FOUND;
-            return false;
-        }
-        if (args->is_equals(args->needle, &item)) {
-            *args->out = at;
-            return true;
-        }
-    } while (coral_range_get_next(range, at, &at));
-    coral_error = CORAL_ERROR_OBJECT_NOT_FOUND;
-    return false;
-}
-
-bool coral$array_insert(struct coral_array *object,
-                        struct coral$array_insert_args *args) {
-    coral_required(object);
-    coral_required(args);
-    if (object->count <= args->at) {
-        coral_error = CORAL_ERROR_INDEX_OUT_OF_BOUNDS;
-        return false;
-    }
-    if (object->count == object->capacity) {
-        size_t capacity_;
-        struct coral_range *capacity_range;
-        if (!coral_ref_get(object->capacity_range_ref,
-                           (void **) &capacity_range)
-            || !coral_range_get_next(capacity_range,
-                                     object->capacity,
-                                     &capacity_)) {
-            coral_error = CORAL_ERROR_CAPACITY_LIMIT_REACHED;
-            return false;
-        }
-        if (!coral$array_adjust_capacity_if_needed(object, capacity_)) {
-            return false;
-        }
-    }
-    unsigned char *src = object->data + (args->at * object->size);
-    unsigned char *dst = (unsigned char *) (src + object->size);
-    const size_t n = object->data + (object->count * object->size) - src;
-    memmove(dst, src, n);
-    object->count += 1;
-    const bool result = coral$array_set_item_at(object, args->at, args->item);
-    if (!result) {
-        object->count -= 1;
-        memmove(src, dst, n);
-    }
-    // TODO: on container increase
-    return result;
-}
-
-bool coral$array_add(struct coral_array *object,
-                     struct coral$array_add_args *args) {
-    coral_required(object);
-    coral_required(args);
-    if (object->count == object->capacity) {
-        size_t capacity_;
-        struct coral_range *capacity_range;
-        if (!coral_ref_get(object->capacity_range_ref,
-                           (void **) &capacity_range)
-            || !coral_range_get_next(capacity_range,
-                                     object->capacity,
-                                     &capacity_)) {
-            coral_error = CORAL_ERROR_CAPACITY_LIMIT_REACHED;
-            return false;
-        }
-        if (!coral$array_adjust_capacity_if_needed(object, capacity_)) {
-            return false;
-        }
-    }
-    if (!coral$array_set_item_at(object, object->count, args->item)) {
-        return false;
-    }
-    object->count += 1;
-    return true;
-}
-
-bool coral$array_delete(struct coral_array *object,
-                        struct coral$array_delete_args *args) {
-    coral_required(object);
-    coral_required(args);
-    if (object->count <= args->at) {
-        coral_error = CORAL_ERROR_INDEX_OUT_OF_BOUNDS;
-        return false;
-    }
-    unsigned char *dst = object->data + (args->at * object->size);
-    unsigned char *src = (unsigned char *) (dst + object->size);
-    const size_t n = object->data + (object->count * object->size) - src;
-    memmove(dst, src, n);
-    object->count -= 1;
-    return true;
-}
-
-bool coral$array_remove(struct coral_array *object, void *args) {
-    coral_required(object);
-    if (!object->count) {
-        coral_error = CORAL_ERROR_OBJECT_NOT_FOUND;
-        return false;
-    }
-    object->count -= 1;
-    return true;
-}
-
-#pragma mark public
-
-bool coral_array_of_objects(struct coral_array **out) {
-    if (coral_array_alloc(out)) {
-        if (coral_array_init(*out,
-                             0,
-                             sizeof(struct coral_object *),
-                             NULL)) {
-            // TODO: add listening for CORAL_CONTAINER_* notifications
-            return true;
-        }
-        coral_array_destroy(*out);
-    }
-    return false;
-}
-
-bool coral_array_alloc(struct coral_array **out) {
-    return coral_object_alloc(sizeof(struct coral_array), (void **) out);
-}
-
-bool coral_array_init(struct coral_array *object,
-                      const size_t count,
-                      const size_t size,
-                      struct coral_range *capacity_range) {
+bool coral$array$get_size(struct coral$array *object, size_t *out) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    return coral$array_init(object,
-                            count,
-                            size,
-                            capacity_range);
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    *out = object->size;
+    return true;
+}
+
+bool coral$array$get(struct coral$array *object,
+                     const size_t at,
+                     struct coral$array$item *out) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    if (object->count <= at) {
+        coral_error = CORAL_ERROR_INDEX_OUT_OF_BOUNDS;
+        return false;
+    }
+    out->size = object->size;
+    out->data = object->data + (at * object->size);
+    return true;
+}
+
+bool coral$array$set(struct coral$array *object,
+                     const size_t at,
+                     const struct coral$array$item *item) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (item && (!item->size || !item->data)) {
+        coral_error = CORAL_ERROR_INVALID_VALUE;
+        return false;
+    }
+    if (object->count <= at) {
+        coral_error = CORAL_ERROR_INDEX_OUT_OF_BOUNDS;
+        return false;
+    }
+    if (item && !coral$array$set_size(object, item->size)) {
+        return false;
+    }
+    unsigned char *dst = object->data + (at * object->size);
+    if (!item) {
+        memset(dst, 0, object->size);
+    } else {
+        memcpy(dst, item->data, item->size);
+    }
+    atomic_fetch_add(&object->id, 1);
+    return true;
+}
+
+bool coral$array$add(struct coral$array *object,
+                     const struct coral$array$item *item) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (item && (!item->size || !item->data)) {
+        coral_error = CORAL_ERROR_INVALID_VALUE;
+        return false;
+    }
+    size_t count;
+    if (!coral_add_size_t(1, object->count, &count)
+        || !coral$array$set_count(object, count)
+        || (item && !coral$array$set_size(object, item->size))) {
+        coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
+        return false;
+    }
+    unsigned char *dst = object->data + (object->count - 1) * object->size;
+    if (!item) {
+        memset(dst, 0, object->size);
+    } else {
+        memcpy(dst, item->data, item->size);
+    }
+    atomic_fetch_add(&object->id, 1);
+    return true;
+}
+
+bool coral$array$remove(struct coral$array *object) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!object->count) {
+        coral_error = CORAL_ERROR_OBJECT_NOT_FOUND;
+        return false;
+    }
+    object->count -= 1;
+    atomic_fetch_add(&object->id, 1);
+    return true;
+}
+
+bool coral$array$insert(struct coral$array *object,
+                        const size_t at,
+                        const struct coral$array$item *item) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (item && (!item->size || !item->data)) {
+        coral_error = CORAL_ERROR_INVALID_VALUE;
+        return false;
+    }
+    if (at >= object->count) {
+        coral_error = CORAL_ERROR_INDEX_OUT_OF_BOUNDS;
+        return false;
+    }
+    size_t count;
+    if (!coral_add_size_t(1, object->count, &count)
+        || !coral$array$set_count(object, count)
+        || (item && !coral$array$set_size(object, item->size))) {
+        coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
+        return false;
+    }
+    count = (object->count - 1) - at;
+    if (count) {
+        memmove(object->data + ((1 + at) * object->size),
+                object->data + (at * object->size),
+                count * object->size);
+    }
+    unsigned char *dst = object->data + (at * object->size);
+    if (!item) {
+        memset(dst, 0, object->size);
+    } else {
+        memcpy(dst, item->data, item->size);
+    }
+    atomic_fetch_add(&object->id, 1);
+    return true;
+}
+
+bool coral$array$delete(struct coral$array *object,
+                        const size_t at) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (at >= object->count) {
+        coral_error = CORAL_ERROR_INDEX_OUT_OF_BOUNDS;
+        return false;
+    }
+    const size_t count = (object->count - 1) - at;
+    if (count) {
+        memmove(object->data + (at * object->size),
+                object->data + ((at + 1) * object->size),
+                count * object->size);
+    }
+    object->count -= 1;
+    atomic_fetch_add(&object->id, 1);
+    return true;
+}
+
+static thread_local struct coral$array *$this;
+
+static thread_local int (*$compare)(const void *,
+                                    const void *,
+                                    const size_t);
+
+static int $compare_func(const void *a, const void *b) {
+    return $compare(a, b, $this->size);
+}
+
+bool coral$array$sort(struct coral$array *object,
+                      struct coral_range_values *values,
+                      int (*compare)(const void *,
+                                     const void *,
+                                     const size_t)) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!compare) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    if (!object->count) {
+        return true;
+    }
+    size_t maximum = SIZE_MAX;
+    size_t minimum = 0;
+    if (values) {
+        coral_required_true(coral_minimum_size_t(
+                values->first, values->last, &minimum));
+        coral_required_true(coral_maximum_size_t(
+                values->first, values->last, &maximum));
+    }
+    coral_required_true(coral_minimum_size_t(
+            maximum, object->count - 1, &maximum));
+    coral_required_true(coral_maximum_size_t(
+            minimum, 0, &minimum));
+    size_t count;
+    coral_required_true(coral_add_size_t(1, maximum - minimum, &count));
+    unsigned char *base = object->data + (object->size * minimum);
+    $this = object;
+    $compare = compare;
+    qsort(base, count, object->size, $compare_func);
+    atomic_fetch_add(&object->id, 1);
+    return true;
+}
+
+static void $context_on_destroy(void *ptr) {
+    free(ptr);
+}
+
+struct coral$array$search_pattern$context {
+    int result;
+    bool is_initialized;
+};
+
+static bool
+$linear_search_pattern$step_function(const size_t current,
+                                     const bool previous,
+                                     const struct coral_range_values values,
+                                     void *context,
+                                     size_t *out) {
+    coral_required(context);
+    struct coral$array$search_pattern$context *c =
+            *(struct coral$array$search_pattern$context **) context;
+    coral_required(c);
+    if (previous) {
+        coral_error = CORAL_ERROR_END_OF_SEQUENCE;
+        return false;
+    }
+    if (!c->is_initialized) {
+        *out = 0;
+        return (c->is_initialized = true);
+    }
+    *out = 1 + current;
+    return 0 != c->result;
+}
+
+struct coral$array$search_pattern$context_binary {
+    struct coral$array$search_pattern$context context;
+    size_t left;
+    size_t mid;
+    size_t right;
+};
+
+static bool
+$binary_search_pattern$step_function(const size_t current,
+                                     const bool previous,
+                                     const struct coral_range_values values,
+                                     void *context,
+                                     size_t *out) {
+    coral_required(context);
+    struct coral$array$search_pattern$context_binary *c =
+            *(struct coral$array$search_pattern$context_binary **) context;
+    coral_required(c);
+    if (previous) {
+        coral_error = CORAL_ERROR_END_OF_SEQUENCE;
+        return false;
+    }
+    if (!c->context.is_initialized) {
+        coral_required_true(coral_minimum_size_t(
+                values.first, values.last, &c->left));
+        coral_required_true(coral_maximum_size_t(
+                values.first, values.last, &c->right));
+        coral_required_true(coral_minimum_size_t(
+                c->right, $this->count - 1, &c->right));
+        c->mid = c->left + ((c->right - c->left) >> 1);
+        *out = c->mid;
+        return (c->context.is_initialized = true);
+    }
+    coral_required_true(current == c->mid);
+    size_t mid = c->mid;
+    if (c->context.result > 0) {
+        c->left = 1 + c->mid;
+    } else if (c->context.result < 0) {
+        c->right = c->mid - 1;
+    }
+    if (c->context.result) {
+        c->mid = c->left + ((c->right - c->left) >> 1);
+        *out = c->mid;
+    }
+    return 0 != c->context.result
+           && *out != mid;
+}
+
+bool coral$array$search_pattern$init_linear(
+        struct coral$array$search_pattern *object) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    struct coral_range_values values = {0, SIZE_MAX};
+    struct coral_context *context;
+    struct coral$array$search_pattern$context **address = NULL;
+    bool result = coral_context_of(&context, $context_on_destroy)
+                  && coral_context_get(context, (void **) &address)
+                  && (*address = calloc(1, sizeof(**address)))
+                  && coral$range$init(&object->range,
+                                      values,
+                                      $linear_search_pattern$step_function,
+                                      context);
+    if (address && !(*address)) {
+        coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
+    }
+    return result;
+}
+
+bool coral$array$search_pattern$init_binary(
+        struct coral$array$search_pattern *object) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    struct coral_range_values values = {0, SIZE_MAX};
+    struct coral_context *context;
+    struct coral$array$search_pattern$context_binary **address = NULL;
+    bool result = coral_context_of(&context, $context_on_destroy)
+                  && coral_context_get(context, (void **) &address)
+                  && (*address = calloc(1, sizeof(**address)))
+                  && coral$range$init(&object->range,
+                                      values,
+                                      $binary_search_pattern$step_function,
+                                      context);
+    if (address && !(*address)) {
+        coral_error = CORAL_ERROR_MEMORY_ALLOCATION_FAILED;
+    }
+    return result;
+}
+
+bool coral$array$search_pattern$invalidate(
+        struct coral$array$search_pattern *object) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    return coral$range$invalidate(&object->range);
+}
+
+bool coral$array$find(struct coral$array *object,
+                      const struct coral_range_values *values,
+                      struct coral$array$search_pattern *search_pattern,
+                      const struct coral$array$item *needle,
+                      int (*compare)(const void *,
+                                     const void *,
+                                     const size_t),
+                      size_t *out) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!search_pattern || !compare || !out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    if (needle && (!needle->size || !needle->data)) {
+        coral_error = CORAL_ERROR_INVALID_VALUE;
+        return false;
+    }
+    if (values) {
+        search_pattern->range.values = *values;
+    }
+    const size_t id = coral$atomic_load(&object->id);
+    $this = object; /* pass object into the search pattern's step function */
+    while (coral$range$get_next(&search_pattern->range, *out, out)) {
+        if (id != coral$atomic_load(&object->id)) {
+            coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
+            return false;
+        }
+        struct coral$array$item item;
+        if (!coral$array$get(object, *out, &item)) {
+            break;
+        }
+        size_t size = item.size;
+        void *data = NULL;
+        if (needle) {
+            coral_required_true(coral_minimum_size_t(
+                    item.size, needle->size, &size));
+            data = needle->data;
+        }
+        const int result = compare(data, item.data, size);
+        if (!result) {
+            return true;
+        }
+        struct coral$array$search_pattern$context **context;
+        coral_required_true(coral_context_get(
+                search_pattern->range.context, (void **) &context));
+        (*context)->result = result;
+    }
+    coral_error = CORAL_ERROR_OBJECT_NOT_FOUND;
+    return false;
+}
+
+struct coral_array {
+    struct coral$array array;
+};
+
+static void $array_destroy$object_destroy(void **object, const size_t size) {
+    void *instance = *object;
+    if (!instance) {
+        return;
+    }
+    coral_required_true(coral_object_release(instance));
+}
+
+static bool $array_destroy(struct coral_array *this,
+                           void *data,
+                           void *args) {
+    coral_required(this);
+    void (*const on_destroy)(void *, const size_t) =
+    (void (*)(void *, const size_t)) $array_destroy$object_destroy;
+    return coral$array$invalidate(&this->array, on_destroy);
+}
+
+static bool $array_is_equal(void *this,
+                            struct coral_array *data,
+                            struct is_equal_args *args) {
+    coral_required(data);
+    coral_required(args);
+    coral_required(args->other);
+    coral_required(args->out);
+    struct coral_array *object = data;
+    struct coral_array *other = args->other;
+    struct {
+        size_t object;
+        size_t other;
+    } id = {
+            .object = coral$atomic_load(&data->array.id),
+            .other = coral$atomic_load(&other->array.id)
+    };
+    *args->out = data->array.count == other->array.count;
+    for (size_t i = 0; *args->out
+                       && coral$atomic_load(&data->array.id) == id.object
+                       && coral$atomic_load(&other->array.id) == id.other
+                       && data->array.count == other->array.count
+                       && i < data->array.count; i++) {
+        struct coral$array$item o, p;
+        if (!coral$array$get((struct coral$array *) object, i,
+                             (struct coral$array$item *) &o)) {
+            coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
+            return false;
+        }
+        if (!coral$array$get((struct coral$array *) other, i,
+                             (struct coral$array$item *) &p)) {
+            coral_error = CORAL_ERROR_ARGUMENT_UNAVAILABLE;
+            return false;
+        }
+        void *q = *(void **) o.data, *w = *(void **) p.data;
+        struct is_equal_args args_ = {
+                .out = args->out,
+                .other = w
+        };
+        if (q != w &&
+            (NULL == q
+             || NULL == w
+             || !coral_object_dispatch(q, is_equal, &args_)
+             || (CORAL_ERROR_METHOD_NOT_FOUND == coral_error
+                 && !coral_object_is_equal(q, w, args->out)))) {
+            return false;
+        }
+    }
+    if (coral$atomic_load(&data->array.id) != id.object) {
+        coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
+        return false;
+    }
+    if (coral$atomic_load(&other->array.id) != id.other) {
+        coral_error = CORAL_ERROR_ARGUMENT_UNAVAILABLE;
+        return false;
+    }
+    return true;
+}
+
+static bool $array_copy(void *this,
+                        struct coral_array *data,
+                        struct copy_args *args) {
+    coral_required(data);
+    coral_required(args);
+    coral_required(args->src);
+    struct coral$array *object = &data->array;
+    struct coral$array *src = &((struct coral_array *) args->src)->array;
+
+    struct coral_range *limit;
+    coral_required_true(coral_reference_get(src->limit_ref, (void **) &limit));
+    if (!coral$array$init(object, limit, src->count, src->size)) {
+        return false;
+    }
+    for (size_t i = 0; i < src->count; i++) {
+        struct coral$array$item o, p;
+        coral_required_true(coral$array$get(
+                object, i, (struct coral$array$item *) &o));
+        coral_required_true(coral$array$get(
+                src, i, (struct coral$array$item *) &p));
+        void *q = *(void **) o.data, *w = *(void **) p.data;
+        if (q && !coral_object_copy(q, p.data)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+struct $array_get_capacity_args {
+    size_t *out;
+};
+
+static bool $array_get_capacity(void *this,
+                                struct coral_array *data,
+                                struct $array_get_capacity_args *args) {
+    coral_required(data);
+    coral_required(args);
+    coral_required(args->out);
+    struct coral$array *object = &data->array;
+    return coral$array$get_capacity(object, args->out);
+}
+
+struct $array_set_capacity_args {
+    size_t capacity;
+};
+
+static bool $array_set_capacity(void *this,
+                                struct coral_array *data,
+                                struct $array_set_capacity_args *args) {
+    coral_required(data);
+    coral_required(args);
+    struct coral$array *object = &data->array;
+    return coral$array$set_capacity(object, args->capacity);
+}
+
+struct $array_get_count_args {
+    size_t *out;
+};
+
+static bool $array_get_count(void *this,
+                             struct coral_array *data,
+                             struct $array_get_count_args *args) {
+    coral_required(data);
+    coral_required(args);
+    coral_required(args->out);
+    struct coral$array *object = &data->array;
+    return coral$array$get_count(object, args->out);
+}
+
+struct $array_set_count_args {
+    size_t count;
+};
+
+static bool $array_set_count(void *this,
+                             struct coral_array *data,
+                             struct $array_set_count_args *args) {
+    coral_required(data);
+    coral_required(args);
+    struct coral$array *object = &data->array;
+    return coral$array$set_count(object, args->count);
+}
+
+struct $array_get_args {
+    size_t at;
+    void **out;
+};
+
+static bool $array_get(void *this,
+                       struct coral_array *data,
+                       struct $array_get_args *args) {
+    coral_required(data);
+    coral_required(args);
+    coral_required(args->out);
+    struct coral$array *object = &data->array;
+    struct coral$array$item item;
+    bool result = coral$array$get(object, args->at, &item);
+    if (result) {
+        void *instance = *(void **) item.data;
+        *args->out = instance;
+        if (instance) {
+            result = coral_object_autorelease(instance);
+        }
+    }
+    return result;
+}
+
+struct $array_set_args {
+    size_t at;
+    void *instance;
+};
+
+static bool $array_set(void *this,
+                       struct coral_array *data,
+                       struct $array_set_args *args) {
+    coral_required(data);
+    coral_required(args);
+    struct coral$array *object = &data->array;
+
+    struct coral$array$item item;
+    if (!coral$array$get(object, args->at, &item)) {
+        return false;
+    }
+    void *i = *(void **) item.data;
+    if (i) {
+        coral_required_true(coral_object_release(i));
+    }
+    bool result;
+    if (!args->instance) {
+        result = coral$array$set(object, args->at, NULL);
+    } else {
+        item.size = sizeof(&args->instance);
+        item.data = &args->instance;
+        result = coral_object_retain(args->instance)
+                 && coral$array$set(object, args->at, &item);
+    }
+    return result;
+}
+
+struct $array_add_args {
+    void *instance;
+};
+
+static bool $array_add(void *this,
+                       struct coral_array *data,
+                       struct $array_add_args *args) {
+    coral_required(data);
+    coral_required(args);
+    struct coral$array *object = &data->array;
+
+    if (!args->instance) {
+        return coral$array$add(object, NULL);
+    }
+    struct coral$array$item item = {
+            .data = &args->instance,
+            .size = sizeof(&args->instance)
+    };
+    if (!coral_object_retain(args->instance)) {
+        return false;
+    }
+    bool result = coral$array$add(object, &item);
+    if (!result) {
+        coral_required_true(coral_object_release(args->instance));
+    }
+    return result;
+}
+
+static bool $array_remove(void *this, struct coral_array *data, void *args) {
+    coral_required(data);
+    struct coral$array *object = &data->array;
+
+    struct coral$array$item item;
+    void *instance;
+    if (object->count
+        && coral$array$get(object, object->count - 1, &item)
+        && (instance = *(void **) item.data)) {
+        coral_required_true(coral_object_release(instance));
+    }
+    return coral$array$remove(object);
+}
+
+struct $array_insert_args {
+    size_t at;
+    void *instance;
+};
+
+static bool $array_insert(void *this,
+                          struct coral_array *data,
+                          struct $array_insert_args *args) {
+    coral_required(data);
+    coral_required(args);
+    struct coral$array *object = &data->array;
+
+    if (!args->instance) {
+        return coral$array$insert(object, args->at, NULL);
+    }
+    if (!coral_object_retain(args->instance)) {
+        return false;
+    }
+    struct coral$array$item item = {
+            .data = &args->instance,
+            .size = sizeof(&args->instance)
+    };
+    bool result = coral$array$insert(object, args->at, &item);
+    if (!result) {
+        coral_required_true(coral_object_release(args->instance));
+    }
+    return result;
+}
+
+struct $array_delete_args {
+    size_t at;
+};
+
+static bool $array_delete(void *this,
+                          struct coral_array *data,
+                          struct $array_delete_args *args) {
+    coral_required(data);
+    coral_required(args);
+    struct coral$array *object = &data->array;
+
+    struct coral$array$item item;
+    void *instance;
+    if (coral$array$get(object, args->at, &item)
+        && (instance = *(void **) item.data)) {
+        coral_required_true(coral_object_release(instance));
+    }
+    return coral$array$delete(object, args->at);
+}
+
+static int $array_compare(const void *a, const void *b, const size_t size) {
+    coral_required(a);
+    coral_required(b);
+    struct item_t {
+        void *object;
+        size_t hash_code;
+    } items[2] = {
+            {.object = *(void **) a, .hash_code = 0},
+            {.object = *(void **) b, .hash_code = 0},
+    };
+    for (size_t i = 0; i < 2; i++) {
+        struct item_t *o = &items[i];
+        if (!o->object) {
+            continue;
+        }
+        struct hash_code_args args = {
+                .out = &o->hash_code
+        };
+        bool result = coral_object_dispatch(o->object, hash_code, &args)
+                      || (CORAL_ERROR_METHOD_NOT_FOUND == coral_error
+                          && coral_object_hash_code(o->object, args.out));
+        coral_required_true(result);
+    }
+    if (items[0].hash_code < items[1].hash_code) {
+        return -1;
+    } else if (items[0].hash_code > items[1].hash_code) {
+        return 1;
+    }
+    return 0;
+}
+
+struct $array_sort_args {
+    struct coral_range_values *values;
+};
+
+static bool $array_sort(void *this,
+                        struct coral_array *data,
+                        struct $array_sort_args *args) {
+    coral_required(data);
+    coral_required(args);
+    struct coral$array *object = &data->array;
+    return coral$array$sort(object, args->values, $array_compare);
+}
+
+struct coral_array_search_pattern {
+    struct coral$array$search_pattern search_pattern;
+};
+
+static bool $array$search_pattern$destroy(
+        struct coral_array_search_pattern *this,
+        void *data,
+        void *args) {
+    coral_required(this);
+    return coral$array$search_pattern$invalidate(&this->search_pattern);
+}
+
+#pragma public -
+
+bool coral_array_alloc(struct coral_array **out) {
+    return coral_object_alloc(sizeof(**out), (void **) out);
+}
+
+bool coral_array_init(struct coral_array *object,
+                      struct coral_range *limit,
+                      size_t count) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    return coral_object_init(object, $class)
+           && coral$array$init(&object->array, limit, count, sizeof(void *));
 }
 
 bool coral_array_destroy(struct coral_array *object) {
     return coral_object_destroy(object);
+}
+
+bool coral_array_hash_code(struct coral_array *object, size_t *out) {
+    return coral_object_hash_code(object, out);
+}
+
+bool coral_array_is_equal(struct coral_array *object,
+                          struct coral_array *other,
+                          bool *out) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!other || !out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    struct is_equal_args args = {
+            .other = other,
+            .out = out
+    };
+    return coral_object_instance_of(object, $class, out)
+           && *out
+           && coral_object_instance_of(other, $class, out)
+           && *out
+           && coral_object_dispatch(object, is_equal, &args);
+}
+
+bool coral_array_copy(struct coral_array *object, struct coral_array **out) {
+    return coral_object_copy(object, (void **) out);
 }
 
 bool coral_array_retain(struct coral_array *object) {
@@ -445,8 +1071,7 @@ bool coral_array_autorelease(struct coral_array *object) {
     return coral_object_autorelease(object);
 }
 
-bool coral_array_get_capacity(struct coral_array *object,
-                              struct coral_range_values *out) {
+bool coral_array_get_capacity(struct coral_array *object, size_t *out) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
@@ -455,12 +1080,26 @@ bool coral_array_get_capacity(struct coral_array *object,
         coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
         return false;
     }
-    struct coral$array_get_capacity_args args = {
+    struct $array_get_capacity_args args = {
             .out = out
     };
     return coral_object_invoke(
             object,
-            (coral_invokable_t) coral$array_get_capacity,
+            (coral_invokable_t) $array_get_capacity,
+            &args);
+}
+
+bool coral_array_set_capacity(struct coral_array *object, size_t capacity) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    struct $array_set_capacity_args args = {
+            .capacity = capacity
+    };
+    return coral_object_invoke(
+            object,
+            (coral_invokable_t) $array_set_capacity,
             &args);
 }
 
@@ -473,30 +1112,30 @@ bool coral_array_get_count(struct coral_array *object, size_t *out) {
         coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
         return false;
     }
-    struct coral$array_get_count_args args = {
+    struct $array_get_count_args args = {
             .out = out
     };
     return coral_object_invoke(
             object,
-            (coral_invokable_t) coral$array_get_count,
+            (coral_invokable_t) $array_get_count,
             &args);
 }
 
-bool coral_array_set_count(struct coral_array *object, const size_t count) {
+bool coral_array_set_count(struct coral_array *object, size_t count) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    struct coral$array_set_count_args args = {
+    struct $array_set_count_args args = {
             .count = count
     };
     return coral_object_invoke(
             object,
-            (coral_invokable_t) coral$array_set_count,
+            (coral_invokable_t) $array_set_count,
             &args);
 }
 
-bool coral_array_get_size(struct coral_array *object, size_t *out) {
+bool coral_array_get(struct coral_array *object, size_t at, void **out) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
@@ -505,160 +1144,42 @@ bool coral_array_get_size(struct coral_array *object, size_t *out) {
         coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
         return false;
     }
-    struct coral$array_get_count_args args = {
-            .out = out
-    };
-    return coral_object_invoke(
-            object,
-            (coral_invokable_t) coral$array_get_size,
-            &args);
-}
-
-bool coral_array_set(struct coral_array *object, const size_t at,
-                     const struct coral_array_item *item) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
-    /* NULL item means clear contents at index */
-    struct coral$array_set_args args = {
-            .at = at
-    };
-    if (item) {
-        if (!item->size || !item->data) {
-            coral_error = CORAL_ERROR_INVALID_VALUE;
-            return false;
-        }
-        args.item = item;
-    }
-    return coral_object_invoke(
-            object,
-            (coral_invokable_t) coral$array_set,
-            &args);
-}
-
-bool coral_array_get(struct coral_array *object, size_t at,
-                     struct coral_array_item *item) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
-    if (!item) {
-        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
-        return false;
-    }
-    struct coral$array_get_args args = {
+    struct $array_get_args args = {
             .at = at,
-            .item = item
-    };
-    return coral_object_invoke(
-            object,
-            (coral_invokable_t) coral$array_get,
-            &args);
-}
-
-bool coral_array_sort(struct coral_array *object,
-                      int (*compare)(const struct coral_array_item *,
-                                     const struct coral_array_item *)) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
-    if (!compare) {
-        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
-        return false;
-    }
-    struct coral$array_sort_args args = {
-            .compare = compare
-    };
-    return coral_object_invoke(
-            object,
-            (coral_invokable_t) coral$array_sort,
-            &args);
-}
-
-bool coral_array_find(struct coral_array *object,
-                      const struct coral_range *range,
-                      const struct coral_array_item *needle,
-                      bool (*is_equals)(const struct coral_array_item *,
-                                        const struct coral_array_item *),
-                      size_t *out) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
-    /* NULL range means we will search the whole array */
-    if (!needle || !is_equals || !out) {
-        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
-        return false;
-    }
-    struct coral$array_find_args args = {
-            .range = range,
-            .needle = needle,
-            .is_equals = is_equals,
             .out = out
     };
     return coral_object_invoke(
             object,
-            (coral_invokable_t) coral$array_find,
+            (coral_invokable_t) $array_get,
             &args);
 }
 
-bool coral_array_insert(struct coral_array *object, const size_t at,
-                        const struct coral_array_item *item) {
+bool coral_array_set(struct coral_array *object, size_t at, void *instance) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    /* NULL item means we insert a zeroed out item */
-    struct coral$array_insert_args args = {
-            .at = at
-    };
-    if (item) {
-        if (!item->size || !item->data) {
-            coral_error = CORAL_ERROR_INVALID_VALUE;
-            return false;
-        }
-        args.item = item;
-    }
-    return coral_object_invoke(
-            object,
-            (coral_invokable_t) coral$array_insert,
-            &args);
-}
-
-bool coral_array_add(struct coral_array *object,
-                     const struct coral_array_item *item) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
-    /* NULL item means we add a zeroed out item */
-    struct coral$array_add_args args = {};
-    if (item) {
-        if (!item->size || !item->data) {
-            coral_error = CORAL_ERROR_INVALID_VALUE;
-            return false;
-        }
-        args.item = item;
-    }
-    return coral_object_invoke(
-            object,
-            (coral_invokable_t) coral$array_add,
-            &args);
-}
-
-bool coral_array_delete(struct coral_array *object, const size_t at) {
-    if (!object) {
-        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
-        return false;
-    }
-    struct coral$array_delete_args args = {
-            .at = at
+    struct $array_set_args args = {
+            .at = at,
+            .instance = instance
     };
     return coral_object_invoke(
             object,
-            (coral_invokable_t) coral$array_delete,
+            (coral_invokable_t) $array_set,
+            &args);
+}
+
+bool coral_array_add(struct coral_array *object, void *instance) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    struct $array_add_args args = {
+            .instance = instance
+    };
+    return coral_object_invoke(
+            object,
+            (coral_invokable_t) $array_add,
             &args);
 }
 
@@ -669,6 +1190,81 @@ bool coral_array_remove(struct coral_array *object) {
     }
     return coral_object_invoke(
             object,
-            (coral_invokable_t) coral$array_remove,
+            (coral_invokable_t) $array_remove,
             NULL);
+}
+
+bool coral_array_insert(struct coral_array *object,
+                        size_t at,
+                        void *instance) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    struct $array_insert_args args = {
+            .at = at,
+            .instance = instance
+    };
+    return coral_object_invoke(
+            object,
+            (coral_invokable_t) $array_insert,
+            &args);
+}
+
+bool coral_array_delete(struct coral_array *object, size_t at) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    struct $array_delete_args args = {
+            .at = at
+    };
+    return coral_object_invoke(
+            object,
+            (coral_invokable_t) $array_delete,
+            &args);
+}
+
+bool coral_array_sort(struct coral_array *object,
+                      struct coral_range_values *values) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    struct $array_sort_args args = {
+            .values = values
+    };
+    return coral_object_invoke(
+            object,
+            (coral_invokable_t) $array_sort,
+            &args);
+}
+
+bool coral_array_search_pattern_of_linear(
+        struct coral_array_search_pattern **out) {
+    if (coral_object_alloc(sizeof(**out), (void **) out)) {
+        if (coral_object_init(*out, $class$search_pattern)
+            && coral$array$search_pattern$init_linear(&(*out)->search_pattern)) {
+            return true;
+        }
+        coral_required_true(coral_array_search_pattern_destroy(*out));
+    }
+    return false;
+}
+
+bool coral_array_search_pattern_of_binary(
+        struct coral_array_search_pattern **out) {
+    if (coral_object_alloc(sizeof(**out), (void **) out)) {
+        if (coral_object_init(*out, $class$search_pattern)
+            && coral$array$search_pattern$init_binary(&(*out)->search_pattern)) {
+            return true;
+        }
+        coral_required_true(coral_array_search_pattern_destroy(*out));
+    }
+    return false;
+}
+
+bool coral_array_search_pattern_destroy(
+        struct coral_array_search_pattern *object) {
+    return coral_object_destroy(object);
 }
