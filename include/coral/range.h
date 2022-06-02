@@ -46,6 +46,7 @@ bool coral_range_of_rate(struct coral_range **out,
 
 #pragma mark coral_object
 
+struct coral_class;
 /**
  * @brief Retrieve the class for range.
  * @param [out] out receive class.

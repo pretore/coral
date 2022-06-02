@@ -26,9 +26,11 @@ static bool $lock_is_equal(void *this,
                            struct coral_lock *data,
                            struct is_equal_args *args);
 
-static bool $lock_copy(void *this, void *data, void *args);
+static bool $lock_copy(void *this,
+                       void *data,
+                       void *args);
 
-__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_LOCK)))
 static void $on_load() {
     struct coral_class_method_name $method_names[] = {
             {destroy,   strlen(destroy)},
@@ -59,9 +61,9 @@ static void $on_load() {
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_LOCK)))
 static void $on_unload() {
-    coral_required_true(coral_object_destroy($class));
+    coral_required_true(coral_class_destroy($class));
 
     coral_autorelease_pool_drain();
 }
@@ -73,7 +75,7 @@ bool coral$lock$init(struct coral$lock *object) {
     }
     pthread_mutexattr_t attr;
     if (pthread_mutexattr_init(&attr)
-        || pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE)
+        || pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_NORMAL)
         || pthread_mutex_init(&object->mutex, &attr)) {
         coral_required_true(EINVAL != errno);
         coral_error = CORAL_ERROR_INITIALIZATION_FAILED;
@@ -98,14 +100,12 @@ static bool $lock$lock_or_unlock(struct coral$lock *object,
     coral_required(object);
     coral_required(func);
     int error;
-    for (uint8_t state = 0;
-         EAGAIN == (error = func(&object->mutex));
-         coral_exponential_usleep(&state, MAXIMUM_USLEEP));
-    switch (error) {
+    switch (error = func(&object->mutex)) {
         case EINVAL: {
             coral_error = CORAL_ERROR_INVALID_VALUE;
             break;
         }
+        case EDEADLK:
         case EPERM: {
             coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
             break;

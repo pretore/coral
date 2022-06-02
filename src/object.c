@@ -30,7 +30,7 @@ static bool $object_is_equal(void *this,
 
 static struct coral_class *$class;
 
-__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_RUNTIME)))
+__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_OBJECT)))
 static void $on_load() {
     struct coral_class_method_name $method_names[] = {
             {hash_code, strlen(hash_code)},
@@ -51,9 +51,9 @@ static void $on_load() {
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_RUNTIME)))
+__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_OBJECT)))
 static void $on_unload() {
-    coral_required_true(coral_object_destroy($class));
+    coral_required_true(coral_class_destroy($class));
     coral_autorelease_pool_drain();
 }
 
@@ -109,7 +109,7 @@ static bool $object_init(void *object, struct coral_class *class) {
         object_->checksum = (size_t) object_
                             ^ (size_t) object_->class
                             ^ (size_t) object_->size;
-        coral$autorelease_pool_add_object_init(object);
+        coral$autorelease_pool$add(object);
         return true;
     }
     coral_error = CORAL_ERROR_INITIALIZATION_FAILED;
@@ -145,7 +145,7 @@ static bool $object_autorelease(void *this, void *data, void *args) {
     coral_required(this);
     const bool result = $object_retain(this, NULL, NULL);
     if (result) {
-        coral$autorelease_pool_add(this);
+        coral$autorelease_pool$add_previous(this);
     }
     return result;
 }
@@ -186,6 +186,13 @@ $object_get_dispatch(void *object, const char *method, coral_invokable_t *out) {
     return coral_class_method_get(class, &name, out);
 }
 
+static bool $object_is_initialized(struct coral_object *object) {
+    coral_required(object);
+    const size_t ref_count = coral$atomic_load(&object->ref_count);
+    return ref_count /* object is initialized */
+           && $is_object(object); /* checksum succeeded */
+}
+
 void
 coral$object_add_observer(struct coral_object *object,
                           void *observer, const char *event,
@@ -216,16 +223,14 @@ bool coral_object_invoke(void *object, coral_invokable_t function, void *args) {
     coral_required(object);
     coral_required(function);
     struct coral_object *object_ = coral$object_from(object);
-    const size_t ref_count = coral$atomic_load(&object_->ref_count);
-    if (!ref_count /* object is uninitialized */
-        || !$is_object(object_) /* checksum failed */) {
+    if (!$object_is_initialized(object_)) {
         coral_error = CORAL_ERROR_OBJECT_IS_UNINITIALIZED;
         return false;
     }
     void *data = coral$object_to(coral$object_resolve(object_));
-    coral$autorelease_pool_start();
+    coral$autorelease_pool$start();
     const bool result = function(object, data, args);
-    coral$autorelease_pool_end();
+    coral$autorelease_pool$end();
     return result;
 }
 
@@ -298,7 +303,7 @@ bool coral_object_instance_of(void *object, struct coral_class *class,
         return false;
     }
     struct coral_object *object_ = coral$object_from(object);
-    *out = object_->class == class;
+    *out = $object_is_initialized(object_) && object_->class == class;
     return true;
 }
 
@@ -358,6 +363,7 @@ bool coral_object_copy(void *object, void **out) {
         return false;
     }
     bool result = false, did_init = false;
+    // FIXME: copy-of-copy(-of-copy...) case ...
     struct coral_object *object_ = coral$object_from(object);
     if ($object_alloc(object_->size, out)
         && $object_init(*out, object_->class)

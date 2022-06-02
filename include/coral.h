@@ -11,12 +11,15 @@
 #include "coral/object.h"
 #include "coral/interface.h"
 #include "coral/class.h"
+#include "coral/integer.h"
 #include "coral/string.h"
 #include "coral/context.h"
 #include "coral/reference.h"
 #include "coral/weak_reference.h"
 #include "coral/range.h"
 #include "coral/array.h"
+#include "coral/tree_set.h"
+#include "coral/tree_map.h"
 #include "coral/lock.h"
 #include "coral/lock_condition.h"
 
@@ -131,7 +134,7 @@ bool coral_clear_reference(struct coral_reference **ref);
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if either out or object is
  * <i>NULL</i>.
  */
-//bool coral_set_weak_ref(struct coral_weak_ref **out, void *object);
+bool coral_set_weak_reference(struct coral_weak_reference **out, void *object);
 
 /**
  * @brief Clear previously set weak reference.
@@ -141,7 +144,7 @@ bool coral_clear_reference(struct coral_reference **ref);
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
-//bool coral_clear_weak_ref(struct coral_weak_ref **ref);
+bool coral_clear_weak_reference(struct coral_weak_reference **ref);
 
 /**
  * @brief Exponentially puts the current thread to sleep.

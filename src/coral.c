@@ -225,7 +225,7 @@ bool coral_inclusive_size_t(const size_t a, const size_t b,
 
 bool coral_set_reference(struct coral_reference **out, void *object) {
     return coral_reference_of(out, object)
-        && coral_reference_retain(*out);
+           && coral_reference_retain(*out);
 }
 
 bool coral_clear_reference(struct coral_reference **ref) {
@@ -238,21 +238,20 @@ bool coral_clear_reference(struct coral_reference **ref) {
     return true;
 }
 
-/*
-bool coral_set_weak_ref(struct coral_weak_ref **out, void *object) {
-    return coral_weak_ref_of(out, object) && coral_weak_ref_retain(*out);
+bool coral_set_weak_reference(struct coral_weak_reference **out, void *object) {
+    return coral_weak_reference_of(out, object)
+           && coral_weak_reference_retain(*out);
 }
 
-bool coral_clear_weak_ref(struct coral_weak_ref **ref) {
+bool coral_clear_weak_reference(struct coral_weak_reference **ref) {
     if (ref && *ref) {
-        if (!coral_weak_ref_release(*ref)) {
+        if (!coral_weak_reference_release(*ref)) {
             return false;
         }
         *ref = NULL;
     }
     return true;
 }
-*/
 
 bool coral_exponential_usleep(uint8_t *state, uint32_t maximum) {
     if (!state) {

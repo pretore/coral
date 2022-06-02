@@ -45,11 +45,12 @@ static void $pool$on_destroy(struct $pool$entry *entry) {
     coral_required_true(coral_string_destroy(entry->key.object));
 }
 
-__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((constructor))
 static void $on_load() {
     coral_required_true(coral$lock$init(&$lock));
     coral_required_true(coral$tree_map$init(
             &$pool,
+            NULL,
             sizeof((*(struct $pool$entry *) 0).key),
             sizeof((*(struct $pool$entry *) 0).value),
             (int (*)(const void *, const void *)) $string$compare));
@@ -64,7 +65,7 @@ static void $on_load() {
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((destructor))
 static void $on_unload() {
     coral_required_true(coral_class_release($class));
     coral_required_true(coral$tree_map$invalidate(

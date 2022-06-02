@@ -19,6 +19,7 @@ bool coral_context_of(struct coral_context **out, void (*on_destroy)(void *));
 
 #pragma mark coral_object
 
+struct coral_class;
 /**
  * @brief Retrieve the class for context.
  * @param [out] out receive class.

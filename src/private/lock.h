@@ -6,6 +6,11 @@
 #include <stdint.h>
 #include <pthread.h>
 
+#include "object.h"
+
+#define CORAL_CLASS_LOAD_PRIORITY_LOCK  \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_OBJECT)
+
 struct coral$lock {
     pthread_mutex_t mutex;
 };
@@ -35,6 +40,7 @@ bool coral$lock$invalidate(struct coral$lock *object);
  * @param [in] object instance.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the thread already owns the lock.
  * @throws CORAL_ERROR_INVALID_VALUE if lock is invalid because it was not
  * initialized.
  */

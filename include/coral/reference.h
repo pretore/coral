@@ -19,6 +19,7 @@ bool coral_reference_of(struct coral_reference **out, void *instance);
 
 #pragma mark coral_object
 
+struct coral_class;
 /**
  * @brief Retrieve the class for reference.
  * @param [out] out receive class.

@@ -6,10 +6,10 @@
 #include <stdbool.h>
 
 struct coral_object;
-struct coral_class;
 
 #pragma mark coral_object
 
+struct coral_class;
 /**
  * @brief Retrieve the class for object.
  * @param [out] out receive class.

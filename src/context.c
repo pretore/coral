@@ -22,7 +22,7 @@ static bool $context_is_equal(void *this,
                               struct coral_context *data,
                               struct is_equal_args *args);
 
-__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_CONTEXT)))
 static void $on_load() {
     struct coral_class_method_name $method_names[] = {
             {destroy,   strlen(destroy)},
@@ -48,9 +48,9 @@ static void $on_load() {
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_CONTEXT)))
 static void $on_unload() {
-    coral_required_true(coral_object_destroy($class));
+    coral_required_true(coral_class_destroy($class));
 
     coral_autorelease_pool_drain();
 }
@@ -98,7 +98,21 @@ static bool $context_is_equal(void *this,
                               struct is_equal_args *args) {
     coral_required(this);
     coral_required(args);
+    coral_required(args->other);
     coral_required(args->out);
+    void *objects[2] = {
+            this, args->other
+    };
+    for (size_t i = 0; i < 2; i++) {
+        bool result;
+        coral_required_true(coral_object_instance_of(objects[i],
+                                                     $class,
+                                                     &result));
+        if (!result) {
+            *args->out = false;
+            return true;
+        }
+    }
     return coral_object_is_equal(this, args->other, args->out);
 }
 
@@ -171,11 +185,7 @@ bool coral_context_is_equal(void *object, void *other, bool *out) {
             .other = other,
             .out = out
     };
-    return coral_object_instance_of(object, $class, out)
-           && *out
-           && coral_object_instance_of(other, $class, out)
-           && *out
-           && coral_object_invoke(
+    return coral_object_invoke(
             object,
             (coral_invokable_t) $context_is_equal,
             &args);

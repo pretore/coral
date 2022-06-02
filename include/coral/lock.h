@@ -9,6 +9,7 @@ struct coral_lock;
 
 #pragma mark coral_object
 
+struct coral_class;
 /**
  * @brief Retrieve the class for lock.
  * @param [out] out receive class.
@@ -125,6 +126,7 @@ bool coral_lock_autorelease(struct coral_lock *object);
  * @param [in] object lock we would like to acquire.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the thread already owns the lock.
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
@@ -136,7 +138,7 @@ bool coral_lock_lock(struct coral_lock *object);
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the thread releasing the
- * object's lock does not own it.
+ * lock does not own it.
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */

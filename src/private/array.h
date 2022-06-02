@@ -8,6 +8,9 @@
 
 #include "range.h"
 
+#define CORAL_CLASS_LOAD_PRIORITY_ARRAY \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_RANGE)
+
 /* Array : https://en.wikipedia.org/wiki/Dynamic_array */
 
 struct coral_reference;
@@ -219,9 +222,7 @@ bool coral$array$delete(struct coral$array *object,
  */
 bool coral$array$sort(struct coral$array *object,
                       struct coral_range_values *values,
-                      int (*compare)(const void *,
-                                     const void *,
-                                     const size_t));
+                      int (*compare)(const void *, const void *, const size_t));
 
 struct coral$array$search_pattern {
     struct coral$range range;
@@ -271,20 +272,29 @@ bool coral$array$search_pattern$invalidate(
  * @param [in] object array instance.
  * @param [in] values if provided, will limit the search to only between the
  * given indexes inclusively.
- * @param [in] search_pattern find the item using this search pattern.
- * @param [in] needle item that we are looking for.
- * @param [in] compare
- * @param [out] out
+ * @param [in] search_pattern find the item using the given search pattern.
+ * @param [in] needle if provided, item that we are looking for otherwise
+ * a <i>ZERO</i>ed out item will be used.
+ * @param [in] compare comparison which must return an integer less than,
+ * equal to, or greater than zero if the <u>first item</u> is considered
+ * to be respectively less than, equal to, or greater than the <u>second
+ * item</u>.
+ * @param [out] out receive the index of the item found in the array.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if search_pattern, compare or out
+ * is <i>NULL</i>.
+ * @throws CORAL_ERROR_INVALID_VALUE if item.size is <i>0</i> or item.data is
+ * <i>NULL</i>.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if array's contents was modified
+ * while performing search.
+ * @throws CORAL_ERROR_OBJECT_NOT_FOUND if the item was not found in the array.
  */
 bool coral$array$find(struct coral$array *object,
                       const struct coral_range_values *values,
                       struct coral$array$search_pattern *search_pattern,
                       const struct coral$array$item *needle,
-                      int (*compare)(const void *,
-                                     const void *,
-                                     const size_t),
+                      int (*compare)(const void *, const void *, const size_t),
                       size_t *out);
 
 #endif /* _CORAL_PRIVATE_ARRAY_H_ */

@@ -2,9 +2,14 @@ cmake_minimum_required(VERSION 3.17)
 project(coral VERSION 1.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
+# Dependencies
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
+find_library(gmp gmp)
+if(NOT gmp)
+    message(FATAL_ERROR "gmp [https://gmplib.org/] not found")
+endif()
 include(cmake/FetchCMocka.cmake)
 
 # Sources
@@ -14,6 +19,7 @@ set(EXPORTED_HEADER_FILES
         include/coral/class.h
         include/coral/context.h
         include/coral/error.h
+        include/coral/integer.h
         include/coral/interface.h
         include/coral/lock.h
         include/coral/lock_condition.h
@@ -22,6 +28,8 @@ set(EXPORTED_HEADER_FILES
         include/coral/range.h
         include/coral/reference.h
         include/coral/string.h
+        include/coral/tree_map.h
+        include/coral/tree_set.h
         include/coral/weak_reference.h
         include/coral.h)
 set(SOURCES
@@ -31,6 +39,7 @@ set(SOURCES
         src/private/class.h
         src/private/context.h
         src/private/coral.h
+        src/private/integer.h
         src/private/interface.h
         src/private/lock.h
         src/private/lock_condition.h
@@ -49,6 +58,7 @@ set(SOURCES
         src/context.c
         src/coral.c
         src/error.c
+        src/integer.c
         src/interface.c
         src/lock.c
         src/lock_condition.c
@@ -76,6 +86,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_libraries(coral
             PUBLIC
                 m
+                gmp
                 ${CMAKE_THREAD_LIBS_INIT}
                 ${CMOCKA_SHARED_LIBRARY})
     target_include_directories(coral
@@ -141,10 +152,22 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_libraries(class-unit-test
             PRIVATE
                 coral)
-    set_target_properties(object-unit-test
+    set_target_properties(class-unit-test
             PROPERTIES
                 LINK_FLAGS ${LINK_FLAGS})
     add_test(class-unit-test class-unit-test)
+    # integer-unit-test
+    add_executable(integer-unit-test test/test_integer.c)
+    target_include_directories(integer-unit-test
+            PRIVATE
+                "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>")
+    target_link_libraries(integer-unit-test
+            PRIVATE
+                coral)
+    set_target_properties(integer-unit-test
+            PROPERTIES
+                LINK_FLAGS ${LINK_FLAGS})
+    add_test(integer-unit-test integer-unit-test)
     # string-unit-test
     add_executable(string-unit-test test/test_string.c)
     target_include_directories(string-unit-test
@@ -302,5 +325,6 @@ else()
     target_link_libraries(coral
             PRIVATE
                 m
+                gmp
                 ${CMAKE_THREAD_LIBS_INIT})
 endif()

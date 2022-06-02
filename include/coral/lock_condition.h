@@ -9,6 +9,7 @@ struct coral_lock_condition;
 
 #pragma mark coral_object
 
+struct coral_class;
 /**
  * @brief Retrieve the class for lock condition.
  * @param [out] out receive class.

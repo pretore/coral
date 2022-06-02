@@ -27,7 +27,7 @@ static bool $weak_reference_copy(void *this,
                                  struct coral_weak_reference *data,
                                  struct copy_args *args);
 
-__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_WEAK_REFERENCE)))
 static void $on_load() {
     struct coral_class_method_name $method_names[] = {
             {destroy,   strlen(destroy)},
@@ -58,9 +58,9 @@ static void $on_load() {
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_WEAK_REFERENCE)))
 static void $on_unload() {
-    coral_required_true(coral_object_destroy($class));
+    coral_required_true(coral_class_destroy($class));
     coral_autorelease_pool_drain();
 }
 
@@ -112,19 +112,6 @@ struct coral_weak_reference {
     struct coral$weak_reference weak_reference;
 };
 
-bool coral_weak_reference_of(struct coral_weak_reference **out,
-                             void *instance) {
-    if (coral_weak_reference_alloc(out)) {
-        if (coral_weak_reference_init(*out, instance)) {
-            return true;
-        }
-        const size_t error = coral_error;
-        coral_weak_reference_destroy(*out);
-        coral_error = error;
-    }
-    return false;
-}
-
 static bool $weak_reference_destroy(void *this,
                                     struct coral_weak_reference *data,
                                     void *args) {
@@ -149,7 +136,11 @@ static bool $weak_reference_hash_code(void *this,
     coral_required(data);
     coral_required(args);
     coral_required(args->out);
-    bool result = coral_object_dispatch(data->weak_reference.object,
+    bool result;
+    coral_required_true(coral_object_instance_of(this,
+                                                 $class,
+                                                 &result));
+    result = coral_object_dispatch(data->weak_reference.object,
                                         hash_code,
                                         args);
     if (!result) {
@@ -161,17 +152,26 @@ static bool $weak_reference_hash_code(void *this,
 static bool $weak_reference_is_equal(void *this,
                                      struct coral_weak_reference *data,
                                      struct is_equal_args *args) {
+    coral_required(this);
     coral_required(data);
     coral_required(args);
+    coral_required(args->other);
     coral_required(args->out);
+    void *objects[2] = {
+            this, args->other
+    };
+    for (size_t i = 0; i < 2; i++) {
+        bool result;
+        coral_required_true(coral_object_instance_of(objects[i],
+                                                     $class,
+                                                     &result));
+        if (!result) {
+            *args->out = false;
+            return true;
+        }
+    }
     struct coral_weak_reference *object = data;
     struct coral_weak_reference *other = args->other;
-    if ((coral_object_instance_of(object, $class, args->out)
-         && !*args->out)
-        || (coral_object_instance_of(other, $class, args->out)
-            && !*args->out)) {
-        return true;
-    }
     args->other = other->weak_reference.object;
     bool result = coral_object_dispatch(object->weak_reference.object,
                                         is_equal,
@@ -198,6 +198,19 @@ static bool $weak_reference_get(void *this,
 
 #pragma mark public -
 
+bool coral_weak_reference_of(struct coral_weak_reference **out,
+                             void *instance) {
+    if (coral_weak_reference_alloc(out)) {
+        if (coral_weak_reference_init(*out, instance)) {
+            return true;
+        }
+        const size_t error = coral_error;
+        coral_required_true(coral_weak_reference_destroy(*out));
+        coral_error = error;
+    }
+    return false;
+}
+
 bool coral_weak_reference_class(struct coral_class **out) {
     if (!out) {
         coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
@@ -210,8 +223,8 @@ bool coral_weak_reference_alloc(struct coral_weak_reference **out) {
     return coral_object_alloc(sizeof(**out), (void **) out);
 }
 
-bool coral_weak_reference_init(struct coral_weak_reference *object, void
-*instance) {
+bool coral_weak_reference_init(struct coral_weak_reference *object,
+        void *instance) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
@@ -220,8 +233,13 @@ bool coral_weak_reference_init(struct coral_weak_reference *object, void
         coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
         return false;
     }
-    return coral_object_init(object, $class)
-           && coral$weak_reference$init(&object->weak_reference, instance);
+    bool result = false;
+    if (coral_object_init(object, $class)) {
+        if (coral$weak_reference$init(&object->weak_reference, instance)) {
+            result = true;
+        }
+    }
+    return result;
 }
 
 bool coral_weak_reference_destroy(struct coral_weak_reference *object) {
@@ -241,7 +259,10 @@ bool coral_weak_reference_hash_code(struct coral_weak_reference *object,
     struct hash_code_args args = {
             .out = out
     };
-    return coral_object_dispatch(object, hash_code, &args);
+    return coral_object_invoke(
+            object,
+            (coral_invokable_t) $weak_reference_hash_code,
+            &args);
 }
 
 bool coral_weak_reference_is_equal(struct coral_weak_reference *object,
@@ -259,7 +280,10 @@ bool coral_weak_reference_is_equal(struct coral_weak_reference *object,
             .other = other,
             .out = out
     };
-    return coral_object_dispatch(object, is_equal, &args);
+    return coral_object_invoke(
+            object,
+            (coral_invokable_t) $weak_reference_is_equal,
+            &args);
 }
 
 bool coral_weak_reference_copy(struct coral_weak_reference *object,

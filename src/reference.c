@@ -27,7 +27,7 @@ static bool $reference_copy(void *this,
                             struct coral_reference *data,
                             struct copy_args *args);
 
-__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_REFERENCE)))
 static void $on_load() {
     struct coral_class_method_name $method_names[] = {
             {destroy,   strlen(destroy)},
@@ -58,9 +58,9 @@ static void $on_load() {
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_REFERENCE)))
 static void $on_unload() {
-    coral_required_true(coral_object_destroy($class));
+    coral_required_true(coral_class_destroy($class));
     coral_autorelease_pool_drain();
 }
 
@@ -112,18 +112,6 @@ bool coral$reference$get(struct coral$reference *object, void **out) {
     return true;
 }
 
-bool coral_reference_of(struct coral_reference **out, void *instance) {
-    if (coral_reference_alloc(out)) {
-        if (coral_reference_init(*out, instance)) {
-            return true;
-        }
-        const size_t error = coral_error;
-        coral_reference_destroy(*out);
-        coral_error = error;
-    }
-    return false;
-}
-
 struct coral_reference {
     struct coral$reference reference;
 };
@@ -152,9 +140,17 @@ static bool $reference_hash_code(void *this,
     coral_required(data);
     coral_required(args);
     coral_required(args->out);
-    bool result = coral_object_dispatch(data->reference.object,
-                                        hash_code,
-                                        args);
+    bool result;
+    coral_required_true(coral_object_instance_of(this,
+                                                 $class,
+                                                 &result));
+    if (!result) {
+        coral_error = CORAL_ERROR_INVALID_VALUE;
+        return false;
+    }
+    result = coral_object_dispatch(data->reference.object,
+                                   hash_code,
+                                   args);
     if (!result) {
         coral_required_true(CORAL_ERROR_METHOD_NOT_FOUND != coral_error);
     }
@@ -164,17 +160,26 @@ static bool $reference_hash_code(void *this,
 static bool $reference_is_equal(void *this,
                                 struct coral_reference *data,
                                 struct is_equal_args *args) {
+    coral_required(this);
     coral_required(data);
     coral_required(args);
+    coral_required(args->other);
     coral_required(args->out);
+    void *objects[2] = {
+            this, args->other
+    };
+    for (size_t i = 0; i < 2; i++) {
+        bool result;
+        coral_required_true(coral_object_instance_of(objects[i],
+                                                     $class,
+                                                     &result));
+        if (!result) {
+            *args->out = false;
+            return true;
+        }
+    }
     struct coral_reference *object = data;
     struct coral_reference *other = args->other;
-    if ((coral_object_instance_of(object, $class, args->out)
-         && !*args->out)
-        || (coral_object_instance_of(other, $class, args->out)
-            && !*args->out)) {
-        return true;
-    }
     args->other = other->reference.object;
     bool result = coral_object_dispatch(object->reference.object,
                                         is_equal,
@@ -200,6 +205,18 @@ static bool $reference_get(void *this,
 }
 
 #pragma mark public -
+
+bool coral_reference_of(struct coral_reference **out, void *instance) {
+    if (coral_reference_alloc(out)) {
+        if (coral_reference_init(*out, instance)) {
+            return true;
+        }
+        const size_t error = coral_error;
+        coral_required_true(coral_reference_destroy(*out));
+        coral_error = error;
+    }
+    return false;
+}
 
 bool coral_reference_class(struct coral_class **out) {
     if (!out) {

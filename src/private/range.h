@@ -5,8 +5,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "context.h"
+
+#define CORAL_CLASS_LOAD_PRIORITY_RANGE  \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_CONTEXT)
+
 struct coral_range_values;
-struct coral_context;
 
 struct coral$range {
     struct coral_range_values values;

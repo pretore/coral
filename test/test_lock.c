@@ -61,13 +61,13 @@ static void check_lock_error_on_null_object(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_lock_with_exponential_usleep(void **state) {
+static void check_lock_error_on_deadlock(void **state) {
     pthread_mutex_lock_is_overridden = true;
-    will_return_count(__wrap_pthread_mutex_lock, EAGAIN, 5);
-    will_return(__wrap_pthread_mutex_lock, 0);
+    will_return(__wrap_pthread_mutex_lock, EDEADLK);
     coral_error = CORAL_ERROR_NONE;
     struct coral$lock object = {};
-    assert_true(coral$lock$lock(&object));
+    assert_false(coral$lock$lock(&object));
+    assert_int_equal(CORAL_ERROR_OBJECT_UNAVAILABLE, coral_error);
     coral_error = CORAL_ERROR_NONE;
     pthread_mutex_lock_is_overridden = false;
 }
@@ -109,17 +109,6 @@ static void check_unlock_error_on_null_object(void **state) {
     assert_false(coral$lock$unlock(NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
-}
-
-static void check_unlock_with_exponential_usleep(void **state) {
-    pthread_mutex_unlock_is_overridden = true;
-    will_return_count(__wrap_pthread_mutex_unlock, EAGAIN, 5);
-    will_return(__wrap_pthread_mutex_unlock, 0);
-    coral_error = CORAL_ERROR_NONE;
-    struct coral$lock object = {};
-    assert_true(coral$lock$unlock(&object));
-    coral_error = CORAL_ERROR_NONE;
-    pthread_mutex_unlock_is_overridden = false;
 }
 
 static void check_unlock_error_on_invalid_value(void **state) {
@@ -453,12 +442,11 @@ int main(int argc, char *argv[]) {
             cmocka_unit_test(check_init_error_on_null_object_ptr),
             cmocka_unit_test(check_init),
             cmocka_unit_test(check_lock_error_on_null_object),
-            cmocka_unit_test(check_lock_with_exponential_usleep),
+            cmocka_unit_test(check_lock_error_on_deadlock),
             cmocka_unit_test(check_lock_error_on_invalid_value),
             cmocka_unit_test(check_lock_error_on_object_unavailable),
             cmocka_unit_test(check_lock),
             cmocka_unit_test(check_unlock_error_on_null_object),
-            cmocka_unit_test(check_unlock_with_exponential_usleep),
             cmocka_unit_test(check_unlock_error_on_invalid_value),
             cmocka_unit_test(check_unlock_error_on_object_unavailable),
             cmocka_unit_test(check_unlock),
