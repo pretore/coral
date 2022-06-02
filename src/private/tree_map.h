@@ -8,6 +8,9 @@
 
 #include "tree_set.h"
 
+#define CORAL_CLASS_LOAD_PRIORITY_TREE_MAP \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_TREE_SET)
+
 /* Map : https://en.wikipedia.org/wiki/Associative_array */
 
 struct coral$tree_map {
@@ -26,9 +29,13 @@ struct coral$tree_map {
  */
 bool coral$tree_map$alloc(struct coral$tree_map **out);
 
+struct coral_range_values;
+
 /**
  * @brief Initialize the tree map instance.
  * @param [in] object instance to be initialized.
+ * @param [in] limit range values used to provide a lower and upper limit to
+ * the number of entries contained within the tree map.
  * @param [in] key_size length in bytes of the key.
  * @param [in] value_size length in bytes of the value.
  * @param [in] compare comparison which must return an integer less than,
@@ -40,6 +47,7 @@ bool coral$tree_map$alloc(struct coral$tree_map **out);
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if compare is <i>NULL</i>.
  */
 bool coral$tree_map$init(struct coral$tree_map *object,
+                         struct coral_range_values *limit,
                          size_t key_size,
                          size_t value_size,
                          int (*compare)(const void *first,
@@ -104,8 +112,11 @@ bool coral$tree_map$get_value_size(struct coral$tree_map *object, size_t *out);
  * @param [in] entry to insert into tree map.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
- * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
- * @throws CORAL_ERROR_OBJECT_ALREADY_EXISTS if entry is already in the map.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if entry is <i>NULL</i>.
+ * @throws CORAL_ERROR_OBJECT_ALREADY_EXISTS if entry with key is already in
+ * the map.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if inserting the instance will exceed
+ * the upper limit on the total number of instances allowed.
  */
 bool coral$tree_map$insert(struct coral$tree_map *object, const void *entry);
 
@@ -118,6 +129,8 @@ bool coral$tree_map$insert(struct coral$tree_map *object, const void *entry);
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if key is <i>NULL</i>.
  * @throws CORAL_ERROR_OBJECT_NOT_FOUND if entry with key was not in the tree
  * map.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if deleting the instance will
+ * reduce the total number of instances to below the lower limit.
  */
 bool coral$tree_map$delete(struct coral$tree_map *object, const void *key);
 
@@ -127,11 +140,12 @@ bool coral$tree_map$delete(struct coral$tree_map *object, const void *key);
  * with the given key.
  * @param [in] key of the entry that we would like to check for presence in
  * the tree map.
- * @param [out] out receive true if entry is present, otherwise false.
+ * @param [out] out receive true if entry with key is present, otherwise false.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if key or out is <i>NULL</i>.
- * @throws CORAL_ERROR_OBJECT_NOT_FOUND if entry was not in the tree map.
+ * @throws CORAL_ERROR_OBJECT_NOT_FOUND if entry with key was not in the tree
+ * map.
  */
 bool coral$tree_map$contains(struct coral$tree_map *object, const void *key,
                              bool *out);
@@ -171,7 +185,7 @@ bool coral$tree_map$set(struct coral$tree_map *object, const void *entry);
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if entry is <i>NULL</i>.
  * @throws CORAL_ERROR_OBJECT_NOT_FOUND if tree map is empty.
  */
-bool coral$tree_map$first(struct coral$tree_map *object, void **out);
+bool coral$tree_map$get_first(struct coral$tree_map *object, void **out);
 
 /**
  * @brief Retrieve the last entry in the tree map.
@@ -183,7 +197,7 @@ bool coral$tree_map$first(struct coral$tree_map *object, void **out);
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if entry is <i>NULL</i>.
  * @throws CORAL_ERROR_OBJECT_NOT_FOUND if tree map is empty.
  */
-bool coral$tree_map$last(struct coral$tree_map *object, void **out);
+bool coral$tree_map$get_last(struct coral$tree_map *object, void **out);
 
 /**
  * @brief Retrieve the next entry in the tree map.
@@ -196,8 +210,8 @@ bool coral$tree_map$last(struct coral$tree_map *object, void **out);
  * @throws CORAL_ERROR_OBJECT_NOT_FOUND if the tree map is empty.
  * @throws CORAL_ERROR_END_OF_SEQUENCE if there are no more entries.
  */
-bool coral$tree_map$next(struct coral$tree_map *object, void *entry,
-                         void **out);
+bool coral$tree_map$get_next(struct coral$tree_map *object, void *entry,
+                             void **out);
 
 /**
  * @brief Retrieve the previous entry in the tree map.
@@ -210,7 +224,7 @@ bool coral$tree_map$next(struct coral$tree_map *object, void *entry,
  * @throws CORAL_ERROR_OBJECT_NOT_FOUND if the tree map is empty.
  * @throws CORAL_ERROR_END_OF_SEQUENCE if there are no more entries.
  */
-bool coral$tree_map$prev(struct coral$tree_map *object, void *entry,
-                         void **out);
+bool coral$tree_map$get_prev(struct coral$tree_map *object, void *entry,
+                             void **out);
 
 #endif /* _CORAL_PRIVATE_TREE_MAP_H_ */

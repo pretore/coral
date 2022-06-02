@@ -6,6 +6,11 @@
 #include <stdint.h>
 #include <pthread.h>
 
+#include "object.h"
+
+#define CORAL_CLASS_LOAD_PRIORITY_LOCK  \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_OBJECT)
+
 struct coral$lock {
     pthread_mutex_t mutex;
 };

@@ -24,7 +24,7 @@ static bool $class_is_equal(void *this,
                             struct coral_class *data,
                             struct is_equal_args *args);
 
-__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_BOOTSTRAP)))
+__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_CLASS)))
 static void $on_load() {
     struct coral_class_method_name $method_names[] = {
             {destroy,   strlen(destroy)},
@@ -50,9 +50,9 @@ static void $on_load() {
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_BOOTSTRAP)))
+__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_CLASS)))
 static void $on_unload() {
-    coral_required_true(coral_object_destroy($class));
+    coral_required_true(coral_class_destroy($class));
 
     coral_autorelease_pool_drain();
 }
@@ -191,6 +191,7 @@ bool coral_class_init(struct coral_class *object) {
     return coral_object_init(object, $class)
            && coral$tree_map$init(
             &object->methods,
+            NULL,
             sizeof((*(struct $method_entry *) 0).key),
             sizeof((*(struct $method_entry *) 0).value),
             (int (*)(const void *, const void *)) $class_method_name_compare);

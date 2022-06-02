@@ -4,6 +4,11 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "object.h"
+
+#define CORAL_CLASS_LOAD_PRIORITY_WEAK_REFERENCE \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_OBJECT)
+
 struct coral$weak_reference {
     void *object;
 };

@@ -5,4 +5,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "object.h"
+
+#define CORAL_CLASS_LOAD_PRIORITY_CONTEXT \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_OBJECT)
+
 #endif /* _CORAL_PRIVATE_CONTEXT_H_ */

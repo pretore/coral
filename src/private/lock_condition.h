@@ -8,6 +8,9 @@
 
 #include "reference.h"
 
+#define CORAL_CLASS_LOAD_PRIORITY_LOCK_CONDITION \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_REFERENCE)
+
 struct coral$lock_condition {
     struct coral$reference lock_ref;
     pthread_cond_t cond;

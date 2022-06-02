@@ -10,6 +10,14 @@ struct coral_array;
 #pragma mark coral_object
 
 /**
+ * @brief Retrieve the class for array.
+ * @param [out] out receive class.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
+ */
+bool coral_array_class(struct coral_class **out);
+
+/**
  * @brief Allocate memory for array instance.
  * @param [out] out receive the allocated array instance.
  * @return On success true, otherwise false if an error has occurred.
@@ -18,6 +26,8 @@ struct coral_array;
  * memory to allocate space for the array instance.
  */
 bool coral_array_alloc(struct coral_array **out);
+
+struct coral_range;
 
 /**
  * @brief Initialize the array instance.
@@ -271,15 +281,28 @@ bool coral_array_delete(struct coral_array *object, size_t at);
  * @param [in] object array instance.
  * @param [in] values if provided, will limit the sort to only affect between
  * the given indexes inclusively.
+ * @param [in] compare comparison which must return an integer less than,
+ * equal to, or greater than zero if <u>first</u> is considered to be
+ * respectively less than, equal to, or greater than <u>second</u>.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if compare is <i>NULL</i>.
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
 bool coral_array_sort(struct coral_array *object,
-                      struct coral_range_values *values);
+                      struct coral_range_values *values,
+                      int (*compare)(const void *, const void *));
 
 struct coral_array_search_pattern;
+
+/**
+ * @brief Retrieve the class for array search pattern.
+ * @param [out] out receive class.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
+ */
+bool coral_array_search_pattern_class(struct coral_class **out);
 
 /**
  * @brief Create a linear search pattern instance.
@@ -317,5 +340,35 @@ bool coral_array_search_pattern_of_binary(
  */
 bool coral_array_search_pattern_destroy(
         struct coral_array_search_pattern *object);
+
+/**
+ * @brief Find an object in the array.
+ * @param [in] object array instance.
+ * @param [in] values if provided, will limit the search to only between the
+ * given indexes inclusively.
+ * @param [in] search_pattern find the object using the given search pattern.
+ * @param [in] needle object that we are looking for.
+ * @param [in] compare comparison which must return an integer less than,
+ * equal to, or greater than zero if <u>first</u> is considered to be
+ * respectively less than, equal to, or greater than <u>second</u>.
+ * @param [out] out receive the index of the item found in the array.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if search_pattern, compare or out is
+ * <i>NULL</i>.
+ * @throws CORAL_ERROR_INVALID_VALUE if search_pattern is not an instance of the
+ * search_pattern class.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if array's contents was modified
+ * while performing search.
+ * @throws CORAL_ERROR_OBJECT_NOT_FOUND if the item was not found in the array.
+ * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
+ * (being) destroyed.
+ */
+bool coral_array_find(struct coral_array *object,
+                      const struct coral_range_values *values,
+                      struct coral_array_search_pattern *search_pattern,
+                      const void *needle,
+                      int (*compare)(const void *, const void *),
+                      size_t *out);
 
 #endif /* _CORAL_ARRAY_H_ */

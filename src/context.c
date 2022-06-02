@@ -22,7 +22,7 @@ static bool $context_is_equal(void *this,
                               struct coral_context *data,
                               struct is_equal_args *args);
 
-__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_CONTEXT)))
 static void $on_load() {
     struct coral_class_method_name $method_names[] = {
             {destroy,   strlen(destroy)},
@@ -48,9 +48,9 @@ static void $on_load() {
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY)))
+__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_CONTEXT)))
 static void $on_unload() {
-    coral_required_true(coral_object_destroy($class));
+    coral_required_true(coral_class_destroy($class));
 
     coral_autorelease_pool_drain();
 }

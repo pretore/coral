@@ -6,6 +6,7 @@
 
 ## Collections:
 - coral_array - _dynamic memory allocated array_
+- coral_tree_set - _set backed by a balanced tree_
 
 ## Ownership:
 - coral_reference - _strong reference_

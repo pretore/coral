@@ -822,6 +822,22 @@ check_find_with_binary_search_patten_with_duplicates(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
+static void check_object_class_error_on_null_argument(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral_array_class(NULL));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_object_class(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_class *class = NULL;
+    assert_true(coral_array_class(&class));
+    assert_non_null(class);
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
 static void check_object_destroy_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_array_destroy(NULL));
@@ -961,6 +977,7 @@ static void check_object_is_equal(void **state) {
     struct coral_class *class = NULL;
     assert_true(coral_object_class(&class));
     assert_true(coral_object_init(q, class));
+
     // TODO: add object instance for non-NULL is_equals test
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
@@ -1537,8 +1554,15 @@ static void check_object_delete(void **state) {
 
 static void check_object_sort_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_false(coral_array_sort(NULL, (void *)1));
+    assert_false(coral_array_sort(NULL, (void *)1, (void *)1));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_object_sort_error_on_null_argument_ptr(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral_array_sort((void *)1, (void *)1, NULL));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
@@ -1556,7 +1580,7 @@ static void check_object_sort(void **state) {
         assert_true(coral_object_init(instance, class));
         assert_true(coral_array_set(object, i, instance));
     }
-    assert_true(coral_array_sort(object, NULL));
+    assert_true(coral_array_sort(object, NULL, coral_compare_void_ptr));
     assert_non_null(instance);
     assert_true(coral_array_get(object, 0, &instance));
     assert_null(instance);
@@ -1583,7 +1607,7 @@ static void check_object_sort_with_range(void **state) {
         assert_true(coral_array_set(object, i, instance));
     }
     struct coral_range_values values = {0, 90};
-    assert_true(coral_array_sort(object, &values));
+    assert_true(coral_array_sort(object, &values, coral_compare_void_ptr));
     assert_non_null(instance);
     assert_true(coral_array_get(object, 0, &instance));
     assert_null(instance);
@@ -1597,9 +1621,26 @@ static void check_object_sort_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array *object;
     assert_true(coral_array_alloc(&object));
-    assert_false(coral_array_sort(object, NULL));
+    assert_false(coral_array_sort(object, NULL, (void*)1));
     assert_int_equal(CORAL_ERROR_OBJECT_IS_UNINITIALIZED, coral_error);
     assert_true(coral_array_destroy(object));
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void
+check_object_search_pattern_class_error_on_null_argument(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral_array_search_pattern_class(NULL));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_object_search_pattern_class(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_class *class = NULL;
+    assert_true(coral_array_search_pattern_class(&class));
+    assert_non_null(class);
+    coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
@@ -1639,6 +1680,103 @@ static void check_object_search_pattern_of_binary(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_array_search_pattern *object;
     assert_true(coral_array_search_pattern_of_binary(&object));
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_object_find_error_on_null_object_ptr(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral_array_find(NULL, (void *)1, (void *)1, (void *)1,
+                                  (void *)1, (void *)1));
+    assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_object_find_error_on_null_argument_ptr(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral_array_find((void *)1, (void *)1, NULL, (void *)1,
+                                  (void *)1, (void*)1));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral_array_find((void *)1, (void *)1, (void*)1, (void *)1,
+                                  NULL, (void*)1));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+    assert_false(coral_array_find((void *)1, (void *)1, (void *)1, (void *)1,
+                                      (void*)1, NULL));
+    assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_object_find_error_on_object_uninitialized(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_array *object;
+    assert_true(coral_array_alloc(&object));
+    assert_false(coral_array_find(object, (void *)1, (void *)1, (void *)1,
+                                  (void *)1, (void*)1));
+    assert_int_equal(CORAL_ERROR_OBJECT_IS_UNINITIALIZED, coral_error);
+    assert_true(coral_array_destroy(object));
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_object_find(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    const size_t count = 100;
+    struct coral_array *object;
+    assert_true(coral_array_alloc(&object));
+    assert_true(coral_array_init(object, NULL, count));
+    struct coral_class *class;
+    assert_true(coral_object_class(&class));
+    void *needle;
+    for (size_t i = 0, limit = count; i < limit; i++) {
+        assert_true(coral_object_alloc(0, &needle));
+        assert_true(coral_object_init(needle, class));
+        assert_true(coral_array_set(object, i, needle));
+    }
+    const size_t index = 76;
+    assert_true(coral_array_get(object, index, &needle));
+    struct coral_array_search_pattern *search_pattern;
+    assert_true(coral_array_search_pattern_of_linear(&search_pattern));
+    size_t out;
+    assert_true(coral_array_find(object, NULL, search_pattern, needle,
+                                 coral_compare_void_ptr, &out));
+    assert_int_equal(index, out);
+    assert_true(coral_array_sort(object, NULL, coral_compare_void_ptr));
+    assert_true(coral_array_get(object, index, &needle));
+    assert_true(coral_array_search_pattern_of_binary(&search_pattern));
+    out = 0;
+    assert_true(coral_array_find(object, NULL, search_pattern, needle,
+                                 coral_compare_void_ptr, &out));
+    assert_int_equal(index, out);
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_object_find_error_on_object_not_found(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    const size_t count = 100;
+    struct coral_array *object;
+    assert_true(coral_array_alloc(&object));
+    assert_true(coral_array_init(object, NULL, count));
+    struct coral_class *class;
+    assert_true(coral_object_class(&class));
+    void *needle;
+    for (size_t i = 0, limit = count; i < limit; i++) {
+        assert_true(coral_object_alloc(0, &needle));
+        assert_true(coral_object_init(needle, class));
+        assert_true(coral_array_set(object, i, needle));
+    }
+    struct coral_array_search_pattern *search_pattern;
+    assert_true(coral_array_search_pattern_of_linear(&search_pattern));
+    size_t out;
+    assert_false(coral_array_find(object, NULL, search_pattern, NULL,
+                                  coral_compare_void_ptr, &out));
+    assert_int_equal(CORAL_ERROR_OBJECT_NOT_FOUND, coral_error);
+    assert_true(coral_array_sort(object, NULL, coral_compare_void_ptr));
+    assert_true(coral_array_search_pattern_of_binary(&search_pattern));
+    assert_false(coral_array_find(object, NULL, search_pattern, NULL,
+                                  coral_compare_void_ptr, &out));
+    assert_int_equal(CORAL_ERROR_OBJECT_NOT_FOUND, coral_error);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
@@ -1708,6 +1846,8 @@ int main(int argc, char *argv[]) {
             cmocka_unit_test(check_find_null_items_with_linear_search_pattern),
             cmocka_unit_test(check_find_with_binary_search_pattern),
             cmocka_unit_test(check_find_with_binary_search_patten_with_duplicates),
+            cmocka_unit_test(check_object_class_error_on_null_argument),
+            cmocka_unit_test(check_object_class),
             cmocka_unit_test(check_object_destroy_error_on_null_object_ptr),
             cmocka_unit_test(check_object_alloc_error_on_null_argument_ptr),
             cmocka_unit_test(check_object_alloc),
@@ -1775,14 +1915,22 @@ int main(int argc, char *argv[]) {
             cmocka_unit_test(check_object_delete_error_on_index_out_of_bounds),
             cmocka_unit_test(check_object_delete),
             cmocka_unit_test(check_object_sort_error_on_null_object_ptr),
+            cmocka_unit_test(check_object_sort_error_on_null_argument_ptr),
             cmocka_unit_test(check_object_sort),
             cmocka_unit_test(check_object_sort_with_range),
             cmocka_unit_test(check_object_sort_error_on_object_uninitialized),
+            cmocka_unit_test(check_object_search_pattern_class_error_on_null_argument),
+            cmocka_unit_test(check_object_search_pattern_class),
             cmocka_unit_test(check_object_search_pattern_destroy_error_on_null_object_ptr),
             cmocka_unit_test(check_object_search_pattern_of_linear_error_on_null_argument_ptr),
             cmocka_unit_test(check_object_search_pattern_of_linear),
             cmocka_unit_test(check_object_search_pattern_of_binary_error_on_null_argument_ptr),
             cmocka_unit_test(check_object_search_pattern_of_binary),
+            cmocka_unit_test(check_object_find_error_on_null_object_ptr),
+            cmocka_unit_test(check_object_find_error_on_null_argument_ptr),
+            cmocka_unit_test(check_object_find_error_on_object_uninitialized),
+            cmocka_unit_test(check_object_find),
+            cmocka_unit_test(check_object_find_error_on_object_not_found),
     };
     //cmocka_set_message_output(CM_OUTPUT_XML);
     return cmocka_run_group_tests(tests, NULL, NULL);

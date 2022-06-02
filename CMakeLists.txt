@@ -22,6 +22,8 @@ set(EXPORTED_HEADER_FILES
         include/coral/range.h
         include/coral/reference.h
         include/coral/string.h
+        include/coral/tree_map.h
+        include/coral/tree_set.h
         include/coral/weak_reference.h
         include/coral.h)
 set(SOURCES

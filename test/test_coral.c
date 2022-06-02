@@ -176,53 +176,59 @@ static void check_clear_reference(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_set_weak_ref_error_on_null_argument_ptr(void **state) {
+static void check_set_weak_reference_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
+    struct coral_class *class = NULL;
+    assert_true(coral_object_class(&class));
     struct coral_object *object;
     assert_true(coral_object_alloc(0, (void **) &object));
-    assert_true(coral_object_init(object, NULL));
-    assert_false(coral_set_weak_ref(NULL, object));
+    assert_true(coral_object_init(object, class));
+    assert_false(coral_set_weak_reference(NULL, object));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
-    struct coral_weak_ref *ref;
-    assert_false(coral_set_weak_ref(&ref, NULL));
+    struct coral_weak_reference *ref;
+    assert_false(coral_set_weak_reference(&ref, NULL));
     assert_int_equal(CORAL_ERROR_ARGUMENT_PTR_IS_NULL, coral_error);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_set_weak_ref(void **state) {
+static void check_set_weak_reference(void **state) {
     coral_error = CORAL_ERROR_NONE;
+    struct coral_class *class = NULL;
+    assert_true(coral_object_class(&class));
     struct coral_object *object;
     assert_true(coral_object_alloc(0, (void **) &object));
-    assert_true(coral_object_init(object, NULL));
-    struct coral_weak_ref *ref;
-    assert_true(coral_set_weak_ref(&ref, object));
-    assert_true(coral_weak_ref_release(ref));
+    assert_true(coral_object_init(object, class));
+    struct coral_weak_reference *ref;
+    assert_true(coral_set_weak_reference(&ref, object));
+    assert_true(coral_weak_reference_release(ref));
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_clear_weak_ref_error_on_uninitialized(void **state) {
+static void check_clear_weak_reference_error_on_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    struct coral_weak_ref *ref;
-    assert_true(coral_weak_ref_alloc(&ref));
-    assert_false(coral_clear_weak_ref(&ref));
+    struct coral_weak_reference *ref;
+    assert_true(coral_weak_reference_alloc(&ref));
+    assert_false(coral_clear_weak_reference(&ref));
     assert_int_equal(CORAL_ERROR_OBJECT_IS_UNINITIALIZED, coral_error);
-    assert_true(coral_weak_ref_destroy(ref));
+    assert_true(coral_weak_reference_destroy(ref));
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_clear_weak_ref(void **state) {
+static void check_clear_weak_reference(void **state) {
     coral_error = CORAL_ERROR_NONE;
-    assert_true(coral_clear_weak_ref(NULL));
-    struct coral_weak_ref *ref = NULL;
-    assert_true(coral_clear_weak_ref(&ref));
+    struct coral_class *class = NULL;
+    assert_true(coral_object_class(&class));
+    assert_true(coral_clear_weak_reference(NULL));
+    struct coral_weak_reference *ref = NULL;
+    assert_true(coral_clear_weak_reference(&ref));
     struct coral_object *object;
     assert_true(coral_object_alloc(0, (void **) &object));
     assert_true(coral_object_init(object, NULL));
-    assert_true(coral_set_weak_ref(&ref, object));
-    assert_true(coral_clear_weak_ref(&ref));
+    assert_true(coral_set_weak_reference(&ref, object));
+    assert_true(coral_clear_weak_reference(&ref));
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
@@ -384,10 +390,10 @@ int main(int argc, char *argv[]) {
             cmocka_unit_test(check_set_reference),
             cmocka_unit_test(check_clear_reference_error_on_uninitialized),
             cmocka_unit_test(check_clear_reference),
-            cmocka_unit_test(check_set_weak_ref_error_on_null_argument_ptr),
-            cmocka_unit_test(check_set_weak_ref),
-            cmocka_unit_test(check_clear_weak_ref_error_on_uninitialized),
-            cmocka_unit_test(check_clear_weak_ref),
+            cmocka_unit_test(check_set_weak_reference_error_on_null_argument_ptr),
+            cmocka_unit_test(check_set_weak_reference),
+            cmocka_unit_test(check_clear_weak_reference_error_on_uninitialized),
+            cmocka_unit_test(check_clear_weak_reference),
             cmocka_unit_test(check_exponential_usleep_error_on_null_argument_ptr),
             cmocka_unit_test(check_exponential_usleep_error_on_invalid_maximum_value),
             cmocka_unit_test(check_exponential_usleep_error_on_invalid_state_value),

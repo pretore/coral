@@ -28,13 +28,12 @@ static bool $array_copy(void *this,
                         struct coral_array *data,
                         struct copy_args *args);
 
-
 static bool $array$search_pattern$destroy(
         struct coral_array_search_pattern *this,
         void *data,
         void *args);
 
-__attribute__((constructor))
+__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_ARRAY)))
 static void $on_load() {
     struct coral_range_values value = {0, SIZE_MAX};
     coral_required_true(coral_range_of_rate(&$limit, value, 1.5));
@@ -74,11 +73,11 @@ static void $on_load() {
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor))
+__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_ARRAY)))
 static void $on_unload() {
     coral_required_true(coral_range_release($limit));
-    coral_required_true(coral_object_destroy($class$search_pattern));
-    coral_required_true(coral_object_destroy($class));
+    coral_required_true(coral_class_destroy($class));
+    coral_required_true(coral_class_destroy($class$search_pattern));
 
     coral_autorelease_pool_drain();
 }
@@ -678,15 +677,15 @@ static bool $array_is_equal(void *this,
         size_t object;
         size_t other;
     } id = {
-            .object = coral$atomic_load(&data->array.id),
+            .object = coral$atomic_load(&object->array.id),
             .other = coral$atomic_load(&other->array.id)
     };
-    *args->out = data->array.count == other->array.count;
+    *args->out = object->array.count == other->array.count;
     for (size_t i = 0; *args->out
-                       && coral$atomic_load(&data->array.id) == id.object
+                       && coral$atomic_load(&object->array.id) == id.object
                        && coral$atomic_load(&other->array.id) == id.other
-                       && data->array.count == other->array.count
-                       && i < data->array.count; i++) {
+                       && object->array.count == other->array.count
+                       && i < object->array.count; i++) {
         struct coral$array$item o, p;
         if (!coral$array$get((struct coral$array *) object, i,
                              (struct coral$array$item *) &o)) {
@@ -712,7 +711,7 @@ static bool $array_is_equal(void *this,
             return false;
         }
     }
-    if (coral$atomic_load(&data->array.id) != id.object) {
+    if (coral$atomic_load(&object->array.id) != id.object) {
         coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
         return false;
     }
@@ -743,8 +742,9 @@ static bool $array_copy(void *this,
                 object, i, (struct coral$array$item *) &o));
         coral_required_true(coral$array$get(
                 src, i, (struct coral$array$item *) &p));
-        void *q = *(void **) o.data, *w = *(void **) p.data;
-        if (q && !coral_object_copy(q, p.data)) {
+        void *q = *(void **) o.data;
+        if (q && !coral_object_copy(q, p.data)
+            || !coral_object_retain(*(void **) p.data)) {
             return false;
         }
     }
@@ -855,8 +855,13 @@ static bool $array_set(void *this,
     } else {
         item.size = sizeof(&args->instance);
         item.data = &args->instance;
-        result = coral_object_retain(args->instance)
-                 && coral$array$set(object, args->at, &item);
+        result = coral_object_retain(args->instance);
+        if (result) {
+            result = coral$array$set(object, args->at, &item);
+            if (!result) {
+                coral_required_true(coral_object_release(args->instance));
+            }
+        }
     }
     return result;
 }
@@ -952,39 +957,18 @@ static bool $array_delete(void *this,
     return coral$array$delete(object, args->at);
 }
 
-static int $array_compare(const void *a, const void *b, const size_t size) {
+static thread_local int (*$object_compare)(const void *, const void *);
+
+static int
+$array_object_compare(const void *a, const void *b, const size_t size) {
     coral_required(a);
     coral_required(b);
-    struct item_t {
-        void *object;
-        size_t hash_code;
-    } items[2] = {
-            {.object = *(void **) a, .hash_code = 0},
-            {.object = *(void **) b, .hash_code = 0},
-    };
-    for (size_t i = 0; i < 2; i++) {
-        struct item_t *o = &items[i];
-        if (!o->object) {
-            continue;
-        }
-        struct hash_code_args args = {
-                .out = &o->hash_code
-        };
-        bool result = coral_object_dispatch(o->object, hash_code, &args)
-                      || (CORAL_ERROR_METHOD_NOT_FOUND == coral_error
-                          && coral_object_hash_code(o->object, args.out));
-        coral_required_true(result);
-    }
-    if (items[0].hash_code < items[1].hash_code) {
-        return -1;
-    } else if (items[0].hash_code > items[1].hash_code) {
-        return 1;
-    }
-    return 0;
+    return $object_compare(*(void **) a, *(void **) b);
 }
 
 struct $array_sort_args {
     struct coral_range_values *values;
+    int (*compare)(const void *, const void *);
 };
 
 static bool $array_sort(void *this,
@@ -992,8 +976,10 @@ static bool $array_sort(void *this,
                         struct $array_sort_args *args) {
     coral_required(data);
     coral_required(args);
+    coral_required(args->compare);
+    $object_compare = args->compare;
     struct coral$array *object = &data->array;
-    return coral$array$sort(object, args->values, $array_compare);
+    return coral$array$sort(object, args->values, $array_object_compare);
 }
 
 struct coral_array_search_pattern {
@@ -1008,7 +994,52 @@ static bool $array$search_pattern$destroy(
     return coral$array$search_pattern$invalidate(&this->search_pattern);
 }
 
-#pragma public -
+struct $array_find_args {
+    const struct coral_range_values *values;
+    struct coral_array_search_pattern *search_pattern;
+    const void *needle;
+    size_t *out;
+    int (*compare)(const void *,
+                   const void *);
+};
+
+static bool $coral_array_find(void *this,
+                              struct coral_array *data,
+                              struct $array_find_args *args) {
+    coral_required(data);
+    coral_required(args);
+    coral_required(args->search_pattern);
+    coral_required(args->compare);
+    coral_required(args->out);
+    bool result;
+    coral_required_true(coral_object_instance_of(
+            args->search_pattern, $class$search_pattern, &result));
+    if (!result) {
+        coral_error = CORAL_ERROR_INVALID_VALUE;
+        return false;
+    }
+    $object_compare = args->compare;
+    struct coral$array$item item = {
+            .data = &args->needle,
+            .size = sizeof(&args->needle)
+    };
+    return coral$array$find(&data->array,
+                            args->values,
+                            &args->search_pattern->search_pattern,
+                            &item,
+                            $array_object_compare,
+                            args->out);
+}
+
+#pragma mark public -
+
+bool coral_array_class(struct coral_class **out) {
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    return coral_object_copy($class, (void **) out);
+}
 
 bool coral_array_alloc(struct coral_array **out) {
     return coral_object_alloc(sizeof(**out), (void **) out);
@@ -1021,8 +1052,13 @@ bool coral_array_init(struct coral_array *object,
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    return coral_object_init(object, $class)
-           && coral$array$init(&object->array, limit, count, sizeof(void *));
+    bool result = false;
+    if (coral_object_init(object, $class)) {
+        if (coral$array$init(&object->array, limit, count, sizeof(void *))) {
+            result = true;
+        }
+    }
+    return result;
 }
 
 bool coral_array_destroy(struct coral_array *object) {
@@ -1226,13 +1262,20 @@ bool coral_array_delete(struct coral_array *object, size_t at) {
 }
 
 bool coral_array_sort(struct coral_array *object,
-                      struct coral_range_values *values) {
+                      struct coral_range_values *values,
+                      int (*compare)(const void *,
+                                     const void *)) {
     if (!object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
+    if (!compare) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
     struct $array_sort_args args = {
-            .values = values
+            .values = values,
+            .compare = compare
     };
     return coral_object_invoke(
             object,
@@ -1240,11 +1283,20 @@ bool coral_array_sort(struct coral_array *object,
             &args);
 }
 
+bool coral_array_search_pattern_class(struct coral_class **out) {
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    return coral_object_copy($class, (void **) out);
+}
+
 bool coral_array_search_pattern_of_linear(
         struct coral_array_search_pattern **out) {
     if (coral_object_alloc(sizeof(**out), (void **) out)) {
+        struct coral$array$search_pattern *object = &(*out)->search_pattern;
         if (coral_object_init(*out, $class$search_pattern)
-            && coral$array$search_pattern$init_linear(&(*out)->search_pattern)) {
+            && coral$array$search_pattern$init_linear(object)) {
             return true;
         }
         coral_required_true(coral_array_search_pattern_destroy(*out));
@@ -1255,8 +1307,9 @@ bool coral_array_search_pattern_of_linear(
 bool coral_array_search_pattern_of_binary(
         struct coral_array_search_pattern **out) {
     if (coral_object_alloc(sizeof(**out), (void **) out)) {
+        struct coral$array$search_pattern *object = &(*out)->search_pattern;
         if (coral_object_init(*out, $class$search_pattern)
-            && coral$array$search_pattern$init_binary(&(*out)->search_pattern)) {
+            && coral$array$search_pattern$init_binary(object)) {
             return true;
         }
         coral_required_true(coral_array_search_pattern_destroy(*out));
@@ -1267,4 +1320,32 @@ bool coral_array_search_pattern_of_binary(
 bool coral_array_search_pattern_destroy(
         struct coral_array_search_pattern *object) {
     return coral_object_destroy(object);
+}
+
+bool coral_array_find(struct coral_array *object,
+                      const struct coral_range_values *values,
+                      struct coral_array_search_pattern *search_pattern,
+                      const void *needle,
+                      int (*compare)(const void *,
+                                     const void *),
+                      size_t *out) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!search_pattern || !compare || !out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    struct $array_find_args args = {
+            .values = values,
+            .search_pattern = search_pattern,
+            .needle = needle,
+            .compare = compare,
+            .out = out
+    };
+    return coral_object_invoke(
+            object,
+            (coral_invokable_t) $coral_array_find,
+            &args);
 }

@@ -30,7 +30,7 @@ static bool $object_is_equal(void *this,
 
 static struct coral_class *$class;
 
-__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_RUNTIME)))
+__attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_OBJECT)))
 static void $on_load() {
     struct coral_class_method_name $method_names[] = {
             {hash_code, strlen(hash_code)},
@@ -51,9 +51,9 @@ static void $on_load() {
     coral_autorelease_pool_drain();
 }
 
-__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_RUNTIME)))
+__attribute__((destructor(CORAL_CLASS_LOAD_PRIORITY_OBJECT)))
 static void $on_unload() {
-    coral_required_true(coral_object_destroy($class));
+    coral_required_true(coral_class_destroy($class));
     coral_autorelease_pool_drain();
 }
 
@@ -358,6 +358,7 @@ bool coral_object_copy(void *object, void **out) {
         return false;
     }
     bool result = false, did_init = false;
+    // FIXME: copy-of-copy(-of-copy...) case ...
     struct coral_object *object_ = coral$object_from(object);
     if ($object_alloc(object_->size, out)
         && $object_init(*out, object_->class)

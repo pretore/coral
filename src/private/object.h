@@ -6,6 +6,11 @@
 #include <stdbool.h>
 #include <stdatomic.h>
 
+#include "class.h"
+
+#define CORAL_CLASS_LOAD_PRIORITY_OBJECT \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_CLASS)
+
 struct coral_object {
     struct coral_class *class;
     atomic_size_t ref_count;
