@@ -1,6 +1,6 @@
 ## Memory Management
 We use reference counting to manage the lifetime of every *initialized* 
-`coral_object`.
+`coral_object` and its subtypes.
 
 Each `coral_object` will have `coral_*_retain(void*)`, `coral_*_release
 (void*)` and `coral_*_autorelease(void*)` methods.

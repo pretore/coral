@@ -1,8 +1,9 @@
 #include <stdlib.h>
 #include <stdatomic.h>
-#include <string.h>
 #include <time.h>
 #include <limits.h>
+#include <float.h>
+#include <math.h>
 #include <coral.h>
 
 #include "private/coral.h"
@@ -56,7 +57,7 @@ bool coral$atomic_compare_exchange(atomic_size_t *ptr, const size_t compare,
                                    const size_t value) {
     coral_required(ptr);
     const atomic_size_t val = value;
-    return atomic_compare_exchange_strong(ptr, (size_t*)&compare, val);
+    return atomic_compare_exchange_strong(ptr, (size_t *) &compare, val);
 }
 
 uintptr_t coral$atomic_load_ptr(const atomic_uintptr_t *ptr) {
@@ -76,7 +77,7 @@ bool coral$atomic_compare_exchange_ptr(atomic_uintptr_t *ptr,
                                        const uintptr_t value) {
     coral_required(ptr);
     const atomic_uintptr_t val = value;
-    return atomic_compare_exchange_strong(ptr, (uintptr_t*)&compare, val);
+    return atomic_compare_exchange_strong(ptr, (uintptr_t *) &compare, val);
 }
 
 void coral$retain(atomic_size_t *ref_counter) {
@@ -150,6 +151,34 @@ bool coral_multiply_size_t(const size_t a, const size_t b, size_t *out) {
     return true;
 }
 
+bool coral_double_is_equal(const double a, const double b, bool *out) {
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    *out = fabs(a - b) <= DBL_EPSILON;
+    return true;
+}
+
+bool coral_multiply_double(const double a, const double b, double *out) {
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    bool result = false;
+    if ((coral_double_is_equal(0, a, &result) && result)
+        || (coral_double_is_equal(0, b, &result) && result)) {
+        *out = 0;
+        return true;
+    }
+    *out = a * b;
+    coral_required_true(coral_double_is_equal((*out) / a, b, &result));
+    if (!result) {
+        coral_error = CORAL_ERROR_LOSS_OF_PRECISION;
+    }
+    return result;
+}
+
 bool coral_minimum_size_t(const size_t a, const size_t b, size_t *out) {
     if (!out) {
         coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
@@ -168,13 +197,40 @@ bool coral_maximum_size_t(const size_t a, const size_t b, size_t *out) {
     return true;
 }
 
-bool coral_set_ref(struct coral_ref **out, void *object) {
-    return coral_ref_of(out, object) && coral_ref_retain(*out);
+bool coral_between_size_t(const size_t a, const size_t b, const size_t value,
+                          bool *out) {
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    size_t min, max;
+    coral_required_true(coral_minimum_size_t(a, b, &min));
+    coral_required_true(coral_maximum_size_t(a, b, &max));
+    *out = min < value && max > value;
+    return true;
 }
 
-bool coral_clear_ref(struct coral_ref **ref) {
+bool coral_inclusive_size_t(const size_t a, const size_t b,
+                            const size_t value, bool *out) {
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    size_t min, max;
+    coral_required_true(coral_minimum_size_t(a, b, &min));
+    coral_required_true(coral_maximum_size_t(a, b, &max));
+    *out = min <= value && max >= value;
+    return true;
+}
+
+bool coral_set_reference(struct coral_reference **out, void *object) {
+    return coral_reference_of(out, object)
+           && coral_reference_retain(*out);
+}
+
+bool coral_clear_reference(struct coral_reference **ref) {
     if (ref && *ref) {
-        if (!coral_ref_release(*ref)) {
+        if (!coral_reference_release(*ref)) {
             return false;
         }
         *ref = NULL;
@@ -182,13 +238,14 @@ bool coral_clear_ref(struct coral_ref **ref) {
     return true;
 }
 
-bool coral_set_weak_ref(struct coral_weak_ref **out, void *object) {
-    return coral_weak_ref_of(out, object) && coral_weak_ref_retain(*out);
+bool coral_set_weak_reference(struct coral_weak_reference **out, void *object) {
+    return coral_weak_reference_of(out, object)
+           && coral_weak_reference_retain(*out);
 }
 
-bool coral_clear_weak_ref(struct coral_weak_ref **ref) {
+bool coral_clear_weak_reference(struct coral_weak_reference **ref) {
     if (ref && *ref) {
-        if (!coral_weak_ref_release(*ref)) {
+        if (!coral_weak_reference_release(*ref)) {
             return false;
         }
         *ref = NULL;

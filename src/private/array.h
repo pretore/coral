@@ -4,109 +4,297 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdatomic.h>
 
-struct coral_range;
-struct coral_array_item;
-struct coral_array {
+#include "range.h"
+
+#define CORAL_CLASS_LOAD_PRIORITY_ARRAY \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_RANGE)
+
+/* Array : https://en.wikipedia.org/wiki/Dynamic_array */
+
+struct coral_reference;
+struct coral$array {
+    atomic_size_t id;
+    struct coral_reference *limit_ref;
     size_t capacity;
     size_t count;
     size_t size;
     unsigned char *data;
-    struct coral_ref *capacity_range_ref;
 };
 
-bool coral$array_init(struct coral_array *object,
+/**
+ * @brief Initialize the array.
+ * @param [in] object instance.
+ * @param [in] limit range used to specify the <u>capacity limits</u>
+ * and also provide a <u>capacity function</u> which is used to calculate the
+ * capacity when a given <b>count</b> is provided. In the event that this is
+ * <i>NULL</i>, a default of no limits set and a <u>capacity function</u>
+ * which will increase the capacity at a rate of <u>1.5</u> times.
+ * @param [in] count initial number of <i>ZERO</i>ed out items.
+ * @param [in] size initial length in bytes of every item.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
+ * memory to allocate space for the array instance.
+ * @throws CORAL_ERROR_INVALID_VALUE if the count provided is larger than the
+ * given maximum capacity limit.
+ */
+bool coral$array$init(struct coral$array *object,
+                      struct coral_range *limit,
                       size_t count,
-                      size_t size,
-                      struct coral_range *capacity_range);
+                      size_t size);
 
-void coral$array_destroy(struct coral_array *object);
+/**
+ * @brief Invalidate the array.
+ * <p>The items in the array are destroyed and each will invoke the
+ * provided <i>on destroy</i> callback. The actual <u>array is not
+ * deallocated</u> since it may have been embedded in a larger structure.
+ * @param [in] object instance.
+ * @param [in] on_destroy called just before the array item is to be destroyed.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ */
+bool coral$array$invalidate(struct coral$array *object,
+                            void (*on_destroy)(void *, const size_t));
 
-struct coral$array_get_capacity_args {
-    struct coral_range_values *out;
+/**
+ * @brief Retrieve the capacity of the array instance.
+ * @param [in] object array instance.
+ * @param [out] out receive capacity.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
+ */
+bool coral$array$get_capacity(struct coral$array *object, size_t *out);
+
+/**
+ * @brief Set the capacity of the array instance.
+ * @param [in] object array instance.
+ * @param [in] capacity value to set the capacity to.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_INVALID_VALUE if capacity is not within limits.
+ * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
+ * memory to allocate the backing data structure.
+ */
+bool coral$array$set_capacity(struct coral$array *object, size_t capacity);
+
+/**
+ * @brief Retrieve the count of items held in the array instance.
+ * @param [in] object array instance.
+ * @param [out] out receive count of items.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
+ */
+bool coral$array$get_count(struct coral$array *object, size_t *out);
+
+/**
+ * @brief Set the number of item.
+ * @param [in] object array instance.
+ * @param [in] count number of items to be held in the array instance. Any
+ * added items will be <i>ZERO</i>ed out.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_INVALID_VALUE if count is not within limits.
+ * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
+ * memory to allocate the backing data structure.
+ */
+bool coral$array$set_count(struct coral$array *object, size_t count);
+
+/**
+ * @brief Retrieve the size of the items in the array.
+ * @param [in] object array instance.
+ * @param [out] out receive the size of the items.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
+ */
+bool coral$array$get_size(struct coral$array *object, size_t *out);
+
+struct coral$array$item {
+    void *data;
+    size_t size;
 };
 
-bool coral$array_get_capacity(struct coral_array *object,
-                              struct coral$array_get_capacity_args *args);
+/**
+ * @brief Retrieve the item at the given index in the array.
+ * @param [in] object array instance.
+ * @param [in] at zero based index of item.
+ * @param [out] out receive item.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
+ * @throws CORAL_ERROR_INDEX_OUT_OF_BOUNDS if at is referring to an item not
+ * contained within the array.
+ */
+bool coral$array$get(struct coral$array *object,
+                     size_t at,
+                     struct coral$array$item *out);
 
-struct coral$array_get_count_args {
-    size_t *out;
+/**
+ * @brief Set the item at the given index in the array.
+ * @param [in] object array instance.
+ * @param [in] at zero based index of item.
+ * @param [in] item if provided, will be used to set the item at the given
+ * index, otherwise the item at the given index will be a <i>ZERO</i>ed out.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_INVALID_VALUE if item.size is <i>0</i> or item.data is
+ * <i>NULL</i>.
+ * @throws CORAL_ERROR_INDEX_OUT_OF_BOUNDS if at is referring to an item not
+ * contained within the array.
+ * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
+ * memory to allocate the backing data structure.
+ */
+bool coral$array$set(struct coral$array *object,
+                     size_t at,
+                     const struct coral$array$item *item);
+
+/**
+ * @brief Add item at the end of the array.
+ * @param [in] object array instance.
+ * @param [in] item if provided, will be added at the end of the array,
+ * otherwise a <i>ZERO</i>ed out item will be added.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_INVALID_VALUE if item.size is <i>0</i> or item.data is
+ * <i>NULL</i>.
+ * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
+ * memory to allocate the backing data structure.
+ */
+bool coral$array$add(struct coral$array *object,
+                     const struct coral$array$item *item);
+
+/**
+ * @brief Remove last item from the array.
+ * @param [in] object array instance.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_OBJECT_NOT_FOUND if array is empty.
+ */
+bool coral$array$remove(struct coral$array *object);
+
+/**
+ * @brief Insert new item at the given index.
+ * @param [in] object array instance.
+ * @param [in] at zero based index of item.
+ * @param [in] item if provided, will be inserted at the given index, otherwise
+ * a <i>ZERO</i>ed out item will be inserted.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_INVALID_VALUE if item.size is <i>0</i> or item.data is
+ * <i>NULL</i>.
+ * @throws CORAL_ERROR_INDEX_OUT_OF_BOUNDS if at is referring to an item not
+ * contained within the array.
+ * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
+ * memory to allocate the backing data structure.
+ */
+bool coral$array$insert(struct coral$array *object,
+                        size_t at,
+                        const struct coral$array$item *item);
+
+/**
+ * @brief Delete item at the given index.
+ * @param [in] object array instance.
+ * @param [in] at zero based index of item.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_INDEX_OUT_OF_BOUNDS if at is referring to an item not
+ * contained within the array.
+ */
+bool coral$array$delete(struct coral$array *object,
+                        size_t at);
+
+/**
+ * @brief Sort the contents of the array using given compare function.
+ * @param [in] object array instance.
+ * @param [in] values if provided, will limit the sort to only affect between
+ * the given indexes inclusively.
+ * @param [in] compare comparison which must return an integer less than,
+ * equal to, or greater than zero if the <u>first item</u> is considered
+ * to be respectively less than, equal to, or greater than the <u>second
+ * item</u>.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if compare is <i>NULL</i>.
+ */
+bool coral$array$sort(struct coral$array *object,
+                      struct coral_range_values *values,
+                      int (*compare)(const void *, const void *, const size_t));
+
+struct coral$array$search_pattern {
+    struct coral$range range;
 };
 
-bool coral$array_get_count(struct coral_array *object,
-                           struct coral$array_get_count_args *args);
+/**
+ * @brief Initialize the linear search pattern instance.
+ * @param [in] object linear search pattern instance.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
+ * memory to allocate the context for the linear search pattern instance.
+ * @see <a href="https://en.wikipedia.org/wiki/Linear_search" />
+ * Linear search algorithm
+ */
+bool coral$array$search_pattern$init_linear(
+        struct coral$array$search_pattern *object);
 
-struct coral$array_set_count_args {
-    size_t count;
-};
+/**
+ * @brief Initialize the binary search pattern instance.
+ * <p>The binary search pattern instance will find the <u>any</u> duplicate
+ * target member in the <u>sorted</u> array.</p>
+ * @param [in] object binary search pattern instance.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
+ * memory to allocate the context for the binary search pattern instance.
+ * @see <a href="https://en.wikipedia.org/wiki/Binary_search_algorithm" />
+ * Binary search algorithm
+ */
+bool coral$array$search_pattern$init_binary(
+        struct coral$array$search_pattern *object);
 
-bool coral$array_set_count(struct coral_array *object,
-                           struct coral$array_set_count_args *args);
+/**
+ * @brief Invalidate the search pattern instance.
+ * <p>The actual <u>search pattern instance is not deallocated</u> since it may
+ * have been embedded in a larger structure.
+ * @param [in] object search pattern instance.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ */
+bool coral$array$search_pattern$invalidate(
+        struct coral$array$search_pattern *object);
 
-struct coral$array_get_size_args {
-    size_t *out;
-};
-
-bool coral$array_get_size(struct coral_array *object,
-                          struct coral$array_get_size_args *args);
-
-struct coral$array_set_args {
-    size_t at;
-    const struct coral_array_item *item;
-};
-
-bool coral$array_set(struct coral_array *object,
-                     struct coral$array_set_args *args);
-
-struct coral$array_get_args {
-    size_t at;
-    struct coral_array_item *item;
-};
-
-bool coral$array_get(struct coral_array *object,
-                     struct coral$array_get_args *args);
-
-struct coral$array_sort_args {
-    int (*compare)(const struct coral_array_item *,
-                   const struct coral_array_item *);
-};
-
-bool coral$array_sort(struct coral_array *object,
-                      struct coral$array_sort_args *args);
-
-struct coral$array_find_args {
-    const struct coral_range *range;
-    const struct coral_array_item *needle;
-    bool (*is_equals)(const struct coral_array_item *,
-                      const struct coral_array_item *);
-    size_t *out;
-};
-
-bool coral$array_find(struct coral_array *object,
-                      struct coral$array_find_args *args);
-
-struct coral$array_insert_args {
-    size_t at;
-    const struct coral_array_item *item;
-};
-
-bool coral$array_insert(struct coral_array *object,
-                        struct coral$array_insert_args *args);
-
-struct coral$array_delete_args {
-    size_t at;
-};
-
-bool coral$array_delete(struct coral_array *object,
-                        struct coral$array_delete_args *args);
-
-struct coral$array_add_args {
-    const struct coral_array_item *item;
-};
-
-bool coral$array_add(struct coral_array *object,
-                     struct coral$array_add_args *args);
-
-bool coral$array_remove(struct coral_array *object, void *args);
+/**
+ * @brief Find an item in the array.
+ * @param [in] object array instance.
+ * @param [in] values if provided, will limit the search to only between the
+ * given indexes inclusively.
+ * @param [in] search_pattern find the item using the given search pattern.
+ * @param [in] needle if provided, item that we are looking for otherwise
+ * a <i>ZERO</i>ed out item will be used.
+ * @param [in] compare comparison which must return an integer less than,
+ * equal to, or greater than zero if the <u>first item</u> is considered
+ * to be respectively less than, equal to, or greater than the <u>second
+ * item</u>.
+ * @param [out] out receive the index of the item found in the array.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if search_pattern, compare or out
+ * is <i>NULL</i>.
+ * @throws CORAL_ERROR_INVALID_VALUE if item.size is <i>0</i> or item.data is
+ * <i>NULL</i>.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if array's contents was modified
+ * while performing search.
+ * @throws CORAL_ERROR_OBJECT_NOT_FOUND if the item was not found in the array.
+ */
+bool coral$array$find(struct coral$array *object,
+                      const struct coral_range_values *values,
+                      struct coral$array$search_pattern *search_pattern,
+                      const struct coral$array$item *needle,
+                      int (*compare)(const void *, const void *, const size_t),
+                      size_t *out);
 
 #endif /* _CORAL_PRIVATE_ARRAY_H_ */

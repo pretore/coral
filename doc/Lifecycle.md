@@ -1,5 +1,5 @@
 ## Lifecycle
-There are objects that are used by the framework that does not use 
+There are objects that are used by the framework that do not use 
 reference counting, but combined with `coral_object` have established the 
 following vocabulary:
 * `*_alloc` - heap allocated instance.
@@ -7,11 +7,13 @@ following vocabulary:
 * `*_init` - initialize the instance before use.
 * `*_invalidate` - invalidate object instance only.
 
-Heap only instances like `coral_object` will not have the `*_invalidate` 
-method as there is no case where you will invalidate the instance and not 
-deallocate it from the heap.
+Heap only instances of `coral_object` and its subtypes will not have the 
+`*_invalidate` method as there is no use case where you will invalidate the 
+instance and not deallocate it from the heap.
 
 ### `coral_object`
+The following process outlines how to create and dispose of `coral_object` 
+instances.
 1. `coral_*_alloc(void**)` allocate space on the heap.
    * **on failure**: do nothing as there is nothing allocated.
 2. `coral_*_init(void*,...)` initialize the instance before use.

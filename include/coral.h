@@ -9,12 +9,19 @@
 #include "coral/notification.h"
 #include "coral/autorelease_pool.h"
 #include "coral/object.h"
+#include "coral/interface.h"
+#include "coral/class.h"
+#include "coral/integer.h"
+#include "coral/string.h"
 #include "coral/context.h"
 #include "coral/reference.h"
 #include "coral/weak_reference.h"
 #include "coral/range.h"
 #include "coral/array.h"
+#include "coral/tree_set.h"
+#include "coral/tree_map.h"
 #include "coral/lock.h"
+#include "coral/lock_condition.h"
 
 /**
  * @brief Require that object be non-<i>NULL</i>.
@@ -72,6 +79,10 @@ bool coral_add_size_t(size_t a, size_t b, size_t *out);
  */
 bool coral_multiply_size_t(size_t a, size_t b, size_t *out);
 
+bool coral_double_is_equal(double a, double b, bool *out);
+
+bool coral_multiply_double(double a, double b, double *out);
+
 /**
  * @brief Return the minimum size_t value.
  * @param [in] a first unsigned integer.
@@ -92,6 +103,10 @@ bool coral_minimum_size_t(size_t a, size_t b, size_t *out);
  */
 bool coral_maximum_size_t(size_t a, size_t b, size_t *out);
 
+bool coral_between_size_t(size_t a, size_t b, size_t value, bool *out);
+
+bool coral_inclusive_size_t(size_t a, size_t b, size_t value, bool *out);
+
 /**
  * @brief Create and set a reference.
  * @param [out] out where the result is stored if successful.
@@ -100,7 +115,7 @@ bool coral_maximum_size_t(size_t a, size_t b, size_t *out);
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if either out or object is
  * <i>NULL</i>.
  */
-bool coral_set_ref(struct coral_ref **out, void *object);
+bool coral_set_reference(struct coral_reference **out, void *object);
 
 /**
  * @brief Clear previously set reference.
@@ -109,7 +124,7 @@ bool coral_set_ref(struct coral_ref **out, void *object);
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
-bool coral_clear_ref(struct coral_ref **ref);
+bool coral_clear_reference(struct coral_reference **ref);
 
 /**
  * @brief Create and set a weak reference.
@@ -119,7 +134,7 @@ bool coral_clear_ref(struct coral_ref **ref);
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if either out or object is
  * <i>NULL</i>.
  */
-bool coral_set_weak_ref(struct coral_weak_ref **out, void *object);
+bool coral_set_weak_reference(struct coral_weak_reference **out, void *object);
 
 /**
  * @brief Clear previously set weak reference.
@@ -129,7 +144,7 @@ bool coral_set_weak_ref(struct coral_weak_ref **out, void *object);
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
-bool coral_clear_weak_ref(struct coral_weak_ref **ref);
+bool coral_clear_weak_reference(struct coral_weak_reference **ref);
 
 /**
  * @brief Exponentially puts the current thread to sleep.

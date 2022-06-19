@@ -6,23 +6,56 @@
 #include <stdint.h>
 #include <pthread.h>
 
-struct coral_lock {
-    pthread_mutex_t *mutex;
+#include "object.h"
+
+#define CORAL_CLASS_LOAD_PRIORITY_LOCK  \
+    (1 + CORAL_CLASS_LOAD_PRIORITY_OBJECT)
+
+struct coral$lock {
+    pthread_mutex_t mutex;
 };
 
-bool coral$lock_alloc(struct coral_lock **out);
+/**
+ * @brief Initialize the lock.
+ * @param [in] object instance.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_INITIALIZATION_FAILED if the lock instance failed to
+ * initialize, more details can be obtained from errno(3).
+ */
+bool coral$lock$init(struct coral$lock *object);
 
-bool coral$lock_init(struct coral_lock *object);
+/**
+ * @brief Invalidate the lock.
+ * <p>The actual <u>lock is not deallocated</u> since it may have been
+ * embedded in a larger structure.
+ * @param [in] object instance.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ */
+bool coral$lock$invalidate(struct coral$lock *object);
 
-void coral$lock_destroy(struct coral_lock *object);
+/**
+ * @brief Acquire the lock.
+ * @param [in] object instance.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the thread already owns the lock.
+ * @throws CORAL_ERROR_INVALID_VALUE if lock is invalid because it was not
+ * initialized.
+ */
+bool coral$lock$lock(struct coral$lock *object);
 
-bool coral$lock_acquire_lock(struct coral_lock *object);
-
-bool coral$lock_release_lock(struct coral_lock *object);
-
-bool coral$acquire_lock(size_t count, struct coral_lock **locks,
-                        struct coral_lock **lock);
-
-bool coral$release_lock(size_t count, struct coral_lock **locks);
+/**
+ * @brief Release the lock.
+ * @param [in] object instance
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_INVALID_VALUE if lock is invalid because it was not
+ * initialized.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the thread releasing the lock does
+ * not own it.
+ */
+bool coral$lock$unlock(struct coral$lock *object);
 
 #endif /* _CORAL_PRIVATE_LOCK_H_ */
