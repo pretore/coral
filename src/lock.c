@@ -95,12 +95,12 @@ bool coral$lock$invalidate(struct coral$lock *object) {
     return true;
 }
 
-static bool $lock$lock_or_unlock(struct coral$lock *object,
-                                 int (*const func)(pthread_mutex_t *)) {
+static bool $lock$action(struct coral$lock *object,
+                         int (*const func)(pthread_mutex_t *)) {
     coral_required(object);
     coral_required(func);
-    int error;
-    switch (error = func(&object->mutex)) {
+    const int error = func(&object->mutex);
+    switch (error) {
         case EINVAL: {
             coral_error = CORAL_ERROR_INVALID_VALUE;
             break;
@@ -122,7 +122,7 @@ bool coral$lock$lock(struct coral$lock *object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    return $lock$lock_or_unlock(object, pthread_mutex_lock);
+    return $lock$action(object, pthread_mutex_lock);
 }
 
 bool coral$lock$unlock(struct coral$lock *object) {
@@ -130,12 +130,24 @@ bool coral$lock$unlock(struct coral$lock *object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    return $lock$lock_or_unlock(object, pthread_mutex_unlock);
+    return $lock$action(object, pthread_mutex_unlock);
 }
 
 struct coral_lock {
     struct coral$lock lock;
 };
+
+static bool $lock_instance_of(void *instance) {
+    coral_required(instance);
+    bool result;
+    coral_required_true(coral_object_instance_of(instance,
+                                                 $class,
+                                                 &result));
+    if (!result) {
+        coral_error = CORAL_ERROR_INVALID_VALUE;
+    }
+    return result;
+}
 
 static bool $lock_destroy(void *this,
                           struct coral_lock *data,
@@ -150,6 +162,9 @@ static bool $lock_hash_code(void *this,
     coral_required(this);
     coral_required(args);
     coral_required(args->out);
+    if (!$lock_instance_of(this)) {
+        return false;
+    }
     return coral_object_hash_code(this, args->out);
 }
 
@@ -159,22 +174,70 @@ static bool $lock_is_equal(void *this,
     coral_required(this);
     coral_required(args);
     coral_required(args->out);
+    void *objects[2] = {
+            this, args->other
+    };
+    for (size_t i = 0; i < 2; i++) {
+        bool result;
+        coral_required_true(coral_object_instance_of(objects[i],
+                                                     $class,
+                                                     &result));
+        if (!result) {
+            *args->out = false;
+            return true;
+        }
+    }
     return coral_object_is_equal(this, args->other, args->out);
 }
 
-static bool $lock_copy(void *this, void *data, void *args) {
+static bool $lock_copy(void *this,
+                       void *data,
+                       void *args) {
     coral_error = CORAL_ERROR_OBJECT_UNAVAILABLE;
     return false; /* copying is not allowed */
 }
 
-static bool $lock_lock(void *this, struct coral_lock *data, void *args) {
+static bool $lock_lock(void *this,
+                       struct coral_lock *data,
+                       void *args) {
     coral_required(data);
+    if (!$lock_instance_of(this)) {
+        return false;
+    }
     return coral$lock$lock(&data->lock);
 }
 
-static bool $lock_unlock(void *this, struct coral_lock *data, void *args) {
+static bool $lock_unlock(void *this,
+                         struct coral_lock *data,
+                         void *args) {
     coral_required(data);
+    if (!$lock_instance_of(this)) {
+        return false;
+    }
     return coral$lock$unlock(&data->lock);
+}
+
+struct $lock_new_condition_args {
+    struct coral_lock_condition **out;
+};
+
+static bool $lock_new_condition(void *this,
+                                struct coral_lock *data,
+                                struct $lock_new_condition_args *args) {
+    coral_required(args);
+    coral_required(args->out);
+    if (!$lock_instance_of(this)) {
+        return false;
+    }
+    if (coral_lock_condition_alloc(args->out)) {
+        if (coral_lock_condition_init(*args->out, this)) {
+            return coral_lock_condition_autorelease(*args->out);
+        }
+        const size_t error = coral_error;
+        coral_required_true(coral_lock_condition_destroy(*args->out));
+        coral_error = error;
+    }
+    return false;
 }
 
 #pragma mark public -
@@ -233,11 +296,7 @@ bool coral_lock_is_equal(struct coral_lock *object,
             .other = other,
             .out = out
     };
-    return coral_object_instance_of(object, $class, out)
-           && *out
-           && coral_object_instance_of(other, $class, out)
-           && *out
-           && coral_object_invoke(
+    return coral_object_invoke(
             object,
             (coral_invokable_t) $lock_is_equal,
             &args);
@@ -287,6 +346,11 @@ bool coral_lock_new_condition(struct coral_lock *object,
         coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
         return false;
     }
-    return coral_lock_condition_alloc(out)
-           && coral_lock_condition_init(*out, object);
+    struct $lock_new_condition_args args = {
+            .out = out
+    };
+    return coral_object_invoke(
+            object,
+            (coral_invokable_t) $lock_new_condition,
+            &args);
 }

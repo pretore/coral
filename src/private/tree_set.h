@@ -44,7 +44,8 @@ bool coral$tree_set$init(struct coral$tree_set *object,
  * @brief Invalidate the tree set instance.
  * <p>The items in the tree set are destroyed and each will invoke the
  * provided <i>on destroy</i> callback. The actual <u>tree set instance
- * is not deallocated</u> since it may have been embedded in a larger structure.
+ * is not deallocated</u> since it may have been embedded in a larger
+ * structure.</p>
  * @param [in] object instance to be invalidated.
  * @param [in] on_destroy called just before the set member is to be destroyed.
  * @return On success true, otherwise false if an error has occurred.

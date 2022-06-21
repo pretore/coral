@@ -29,7 +29,7 @@ bool coral$lock_condition$init(struct coral$lock_condition *object,
 /**
  * @brief Invalidate the lock condition.
  * <p>The actual <u>lock condition is not deallocated</u> since it may have been
- * embedded in a larger structure.
+ * embedded in a larger structure.</p>
  * @param [in] object instance.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.

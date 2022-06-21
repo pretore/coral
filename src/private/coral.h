@@ -7,8 +7,6 @@
 
 /* Maximum microseconds that we will sleep for during an exponential backoff */
 #define MAXIMUM_USLEEP 250
-/* Default number used to allocate new items at a time */
-#define DEFAULT 16
 
 /**
  * @brief Swap the contents of two void* variables.

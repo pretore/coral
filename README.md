@@ -2,8 +2,6 @@
 
 ![main](https://github.com/pretore/coral/actions/workflows/cmake.yml/badge.svg?branch=main)
 
-## A framework in C
-
 ## Data types:
 - `coral_integer` - _arbitrary-precision integer_
 
@@ -19,5 +17,6 @@
 
 ## Miscellaneous:
 - `coral_range` - _beginning and end with progression and membership checks_
-- `coral_lock`
-- `coral_lock_condition`
+- `coral_lock` - _exclusive access to a shared resource_
+- `coral_lock_condition` - _event signalling between two or more threads_
+- `coral_rwlock` - _shared resource has exclusive write access while having unconstrained read access_

@@ -1,71 +1,73 @@
-#ifndef _CORAL_LOCK_H_
-#define _CORAL_LOCK_H_
+#ifndef _CORAL_RWLOCK_H_
+#define _CORAL_RWLOCK_H_
 
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-struct coral_lock;
+struct coral_rwlock;
 
 #pragma mark coral_object
 
 struct coral_class;
 /**
- * @brief Retrieve the class for lock.
+ * @brief Retrieve the class for read-write lock.
  * @param [out] out receive class.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
  */
-bool coral_lock_class(struct coral_class **out);
+bool coral_rwlock_class(struct coral_class **out);
 
 /**
- * @brief Allocate memory for lock instance.
+ * @brief Allocate memory for read-write lock instance.
  * @param [in] size bytes needed to be allocated for lock instance.
- * @param [out] out receive the allocated lock instance.
+ * @param [out] out receive the allocated read-write lock instance.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
  * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
- * memory to allocate the lock instance.
+ * memory to allocate the read-write lock instance.
  */
-bool coral_lock_alloc(struct coral_lock **out);
+bool coral_rwlock_alloc(struct coral_rwlock **out);
 
 /**
- * @brief Initialize the lock instance.
+ * @brief Initialize the read-write lock instance.
  * @param [in] object instance to be initialized.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  */
-bool coral_lock_init(struct coral_lock *object);
+bool coral_rwlock_init(struct coral_rwlock *object);
 
 /**
- * @brief Destroy the lock instance.
+ * @brief Destroy the read-write lock instance.
  * @param [in] object instance to be destroyed.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  */
-bool coral_lock_destroy(struct coral_lock *object);
+bool coral_rwlock_destroy(struct coral_rwlock *object);
 
 extern const char *destroy;
 
 /**
- * @brief Retrieve the hash code of the lock.
+ * @brief Retrieve the hash code of the read-write lock.
  * @param [in] object instance whose hash code we would like to retrieve.
  * @param [out] out receive the hash code.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
  * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
- * @throws CORAL_ERROR_INVALID_VALUE if object is not a lock instance.
+ * @throws CORAL_ERROR_INVALID_VALUE if object is not a read-write lock
+ * instance.
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
-bool coral_lock_hash_code(struct coral_lock *object, size_t *out);
+bool coral_rwlock_hash_code(struct coral_rwlock *object,
+                                     size_t *out);
 
 extern const char *hash_code;
 
 /**
- * @brief Check if these two locks are equal.
- * @param [in] object first lock.
- * @param [in] other second lock.
+ * @brief Check if these two read-write locks are equal.
+ * @param [in] object first read-write lock.
+ * @param [in] other second read-write lock.
  * @param [out] out true if <b>object</b> and <b>other</b> are equal,
  * otherwise false.
  * @return On success true, otherwise false if an error has occurred.
@@ -74,18 +76,11 @@ extern const char *hash_code;
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
-bool coral_lock_is_equal(struct coral_lock *object,
-                         struct coral_lock *other,
-                         bool *out);
+bool coral_rwlock_is_equal(struct coral_rwlock *object,
+                                    struct coral_rwlock *other,
+                                    bool *out);
 
 extern const char *is_equal;
-
-/**
- * @brief Lock is not copyable.
- * @return false.
- * @throws CORAL_ERROR_OBJECT_UNAVAILABLE since lock is not copyable.
- */
-extern const char *copy;
 
 /**
  * @brief Retain the referenced counted object.
@@ -96,7 +91,7 @@ extern const char *copy;
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
-bool coral_lock_retain(struct coral_lock *object);
+bool coral_rwlock_retain(struct coral_rwlock *object);
 
 /**
  * @brief Release and possibly free object resources.
@@ -107,7 +102,7 @@ bool coral_lock_retain(struct coral_lock *object);
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
-bool coral_lock_release(struct coral_lock *object);
+bool coral_rwlock_release(struct coral_rwlock *object);
 
 /**
  * @brief Allow object to return from current function.
@@ -118,49 +113,35 @@ bool coral_lock_release(struct coral_lock *object);
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
-bool coral_lock_autorelease(struct coral_lock *object);
+bool coral_rwlock_autorelease(struct coral_rwlock *object);
 
-#pragma mark coral_lock
+#pragma mark coral_rwlock
 
 /**
- * @brief Acquire the lock.
- * @param [in] object lock we would like to acquire.
+ * @brief Acquire the read lock.
+ * @param [in] object instance.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
- * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the thread already owns the lock.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the thread already owns the
+ * write lock.
+ * @throws CORAL_ERROR_INVALID_VALUE if object is not a lock instance or the
+ * maximum number of read locks has been exceeded.
+ * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
+ * (being) destroyed.
+ */
+bool coral_rwlock_read_lock(struct coral_rwlock *object);
+
+/**
+ * @brief Acquire the write lock.
+ * @param [in] object instance.
+ * @return On success true, otherwise false if an error has occurred.
+ * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
+ * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the thread already owns the
+ * lock for reading or writing.
  * @throws CORAL_ERROR_INVALID_VALUE if object is not a lock instance.
  * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
  * (being) destroyed.
  */
-bool coral_lock_lock(struct coral_lock *object);
+bool coral_rwlock_write_lock(struct coral_rwlock *object);
 
-/**
- * @brief Release the lock.
- * @param [in] object lock we own and we are to release.
- * @return On success true, otherwise false if an error has occurred.
- * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
- * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the thread releasing the
- * lock does not own it.
- * @throws CORAL_ERROR_INVALID_VALUE if object is not a lock instance.
- * @throws CORAL_ERROR_OBJECT_IS_UNINITIALIZED if object is uninitialized or
- * (being) destroyed.
- */
-bool coral_lock_unlock(struct coral_lock *object);
-
-struct coral_lock_condition;
-
-/**
- * @brief Create new lock condition bound to the given lock.
- * @param [in] object lock instance.
- * @param [out] out receive new lock condition.
- * @return On success true, otherwise false if an error has occurred.
- * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
- * @throws CORAL_ERROR_ARGUMENT_PTR_IS_NULL if out is <i>NULL</i>.
- * @throws CORAL_ERROR_INVALID_VALUE if object is not a lock instance.
- * @throws CORAL_ERROR_MEMORY_ALLOCATION_FAILED if there is insufficient
- * memory to allocate the lock condition instance.
- */
-bool coral_lock_new_condition(struct coral_lock *object,
-                              struct coral_lock_condition **out);
-
-#endif /* _CORAL_LOCK_H_ */
+#endif /* _CORAL_RWLOCK_H_ */

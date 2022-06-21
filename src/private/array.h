@@ -49,7 +49,7 @@ bool coral$array$init(struct coral$array *object,
  * @brief Invalidate the array.
  * <p>The items in the array are destroyed and each will invoke the
  * provided <i>on destroy</i> callback. The actual <u>array is not
- * deallocated</u> since it may have been embedded in a larger structure.
+ * deallocated</u> since it may have been embedded in a larger structure.</p>
  * @param [in] object instance.
  * @param [in] on_destroy called just before the array item is to be destroyed.
  * @return On success true, otherwise false if an error has occurred.

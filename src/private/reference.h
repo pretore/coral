@@ -26,7 +26,7 @@ bool coral$reference$init(struct coral$reference *object, void *instance);
 /**
  * @brief Invalidate the reference.
  * <p>The actual <u>reference is not deallocated</u> since it may have been
- * embedded in a larger structure.
+ * embedded in a larger structure.</p>
  * @param [in] object instance.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.

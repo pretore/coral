@@ -28,7 +28,7 @@ bool coral$lock$init(struct coral$lock *object);
 /**
  * @brief Invalidate the lock.
  * <p>The actual <u>lock is not deallocated</u> since it may have been
- * embedded in a larger structure.
+ * embedded in a larger structure.</p>
  * @param [in] object instance.
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
@@ -51,10 +51,10 @@ bool coral$lock$lock(struct coral$lock *object);
  * @param [in] object instance
  * @return On success true, otherwise false if an error has occurred.
  * @throws CORAL_ERROR_OBJECT_PTR_IS_NULL if object is <i>NULL</i>.
- * @throws CORAL_ERROR_INVALID_VALUE if lock is invalid because it was not
- * initialized.
  * @throws CORAL_ERROR_OBJECT_UNAVAILABLE if the thread releasing the lock does
  * not own it.
+ * @throws CORAL_ERROR_INVALID_VALUE if lock is invalid because it was not
+ * initialized.
  */
 bool coral$lock$unlock(struct coral$lock *object);
 

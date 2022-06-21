@@ -22,6 +22,7 @@
 #include "coral/tree_map.h"
 #include "coral/lock.h"
 #include "coral/lock_condition.h"
+#include "coral/rwlock.h"
 
 /**
  * @brief Require that object be non-<i>NULL</i>.

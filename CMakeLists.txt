@@ -26,6 +26,7 @@ set(EXPORTED_HEADER_FILES
         include/coral/notification.h
         include/coral/object.h
         include/coral/range.h
+        include/coral/rwlock.h
         include/coral/reference.h
         include/coral/string.h
         include/coral/tree_map.h
@@ -45,6 +46,7 @@ set(SOURCES
         src/private/lock_condition.h
         src/private/object.h
         src/private/range.h
+        src/private/rwlock.h
         src/private/red_black_tree.h
         src/private/reference.h
         src/private/scope.h
@@ -65,6 +67,7 @@ set(SOURCES
         src/notification.c
         src/object.c
         src/range.c
+        src/rwlock.c
         src/red_black_tree.c
         src/reference.c
         src/scope.c
@@ -228,6 +231,18 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             PROPERTIES
                 LINK_FLAGS ${LINK_FLAGS})
     add_test(lock-condition-unit-test lock-condition-unit-test)
+    # rwlock-unit-test
+    add_executable(rwlock-unit-test test/test_rwlock.c)
+    target_include_directories(rwlock-unit-test
+            PRIVATE
+                "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>")
+    target_link_libraries(rwlock-unit-test
+            PRIVATE
+                coral)
+    set_target_properties(rwlock-unit-test
+            PROPERTIES
+                LINK_FLAGS ${LINK_FLAGS})
+    add_test(rwlock-unit-test rwlock-unit-test)
     # context-unit-test
     add_executable(context-unit-test test/test_context.c)
     target_include_directories(context-unit-test

@@ -47,7 +47,8 @@ bool coral$tree_map$init(struct coral$tree_map *object,
  * @brief Invalidate the tree map instance.
  * <p>The entries in the tree map are destroyed and each will invoke the
  * provided <i>on destroy</i> callback. The actual <u>tree map instance
- * is not deallocated</u> since it may have been embedded in a larger structure.
+ * is not deallocated</u> since it may have been embedded in a larger
+ * structure.</p>
  * @param [in] object instance to be invalidated.
  * @param [in] on_destroy called just before the map entry is to be destroyed.
  * @return On success true, otherwise false if an error has occurred.

@@ -213,6 +213,16 @@ static void check_object_hash_code_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
+static void check_object_hash_code_error_on_invalid_value(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_class *class = NULL;
+    assert_true(coral_lock_class(&class));
+    assert_false(coral_lock_hash_code((struct coral_lock *)class, (void *)1));
+    assert_int_equal(CORAL_ERROR_INVALID_VALUE, coral_error);
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
 static void check_object_hash_code_error_on_object_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_lock *object;
@@ -249,6 +259,22 @@ static void check_object_is_equal_error_on_null_argument_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
+static void check_object_is_equal_invalid_value(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_class *class = NULL;
+    assert_true(coral_lock_class(&class));
+    struct coral_lock *i;
+    assert_true(coral_lock_alloc(&i));
+    assert_true(coral_lock_init(i));
+    bool result;
+    assert_true(coral_lock_is_equal((struct coral_lock *)class, i, &result));
+    assert_false(result);
+    assert_true(coral_lock_is_equal(i, (struct coral_lock *)class, &result));
+    assert_false(result);
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
 static void check_object_is_equal(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_lock *i, *o;
@@ -257,13 +283,13 @@ static void check_object_is_equal(void **state) {
     assert_true(coral_lock_alloc(&o));
     assert_true(coral_lock_init(o));
     bool result;
-    assert_true(coral_object_is_equal(i, o, &result));
+    assert_true(coral_lock_is_equal(i, o, &result));
     assert_false(result);
-    assert_true(coral_object_is_equal(i, i, &result));
+    assert_true(coral_lock_is_equal(i, i, &result));
     assert_true(result);
-    assert_true(coral_object_is_equal(o, i, &result));
+    assert_true(coral_lock_is_equal(o, i, &result));
     assert_false(result);
-    assert_true(coral_object_is_equal(o, o, &result));
+    assert_true(coral_lock_is_equal(o, o, &result));
     assert_true(result);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
@@ -281,14 +307,14 @@ static void check_object_copy_error_on_object_is_unavailable(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_object_lock_retain_error_on_object_ptr(void **state) {
+static void check_object_retain_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_lock_retain(NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_object_lock_retain_error_on_object_unavailable(void **state) {
+static void check_object_retain_error_on_object_unavailable(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_lock *object;
     assert_true(coral_lock_alloc(&object));
@@ -298,15 +324,14 @@ static void check_object_lock_retain_error_on_object_unavailable(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_object_lock_release_error_on_object_ptr(void **state) {
+static void check_object_release_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_lock_release(NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void
-check_object_lock_release_error_on_object_unavailable(void **state) {
+static void check_object_release_error_on_object_unavailable(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_lock *object;
     assert_true(coral_lock_alloc(&object));
@@ -316,15 +341,14 @@ check_object_lock_release_error_on_object_unavailable(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void check_object_lock_autorelease_error_on_object_ptr(void **state) {
+static void check_object_autorelease_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_lock_autorelease(NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
     coral_error = CORAL_ERROR_NONE;
 }
 
-static void
-check_object_lock_autorelease_error_on_object_unavailable(void **state) {
+static void check_object_autorelease_error_on_object_unavailable(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_lock *object;
     assert_true(coral_lock_alloc(&object));
@@ -338,6 +362,16 @@ static void check_object_lock_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_lock_lock(NULL));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_object_lock_error_on_invalid_value(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_class *class = NULL;
+    assert_true(coral_lock_class(&class));
+    assert_false(coral_lock_lock((struct coral_lock *)class));
+    assert_int_equal(CORAL_ERROR_INVALID_VALUE, coral_error);
+    coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
@@ -381,6 +415,16 @@ static void check_object_unlock_error_on_object_is_uninitialized(void **state) {
     coral_error = CORAL_ERROR_NONE;
 }
 
+static void check_object_unlock_error_on_invalid_value(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_class *class = NULL;
+    assert_true(coral_lock_class(&class));
+    assert_false(coral_lock_unlock((struct coral_lock *)class));
+    assert_int_equal(CORAL_ERROR_INVALID_VALUE, coral_error);
+    coral_autorelease_pool_drain();
+    coral_error = CORAL_ERROR_NONE;
+}
+
 static void check_object_unlock_error_on_object_unavailable(void **state) {
     coral_error = CORAL_ERROR_NONE;
     struct coral_lock *object;
@@ -412,6 +456,17 @@ static void check_object_new_condition_error_on_null_object_ptr(void **state) {
     coral_error = CORAL_ERROR_NONE;
     assert_false(coral_lock_new_condition(NULL, (void *)1));
     assert_int_equal(CORAL_ERROR_OBJECT_PTR_IS_NULL, coral_error);
+    coral_error = CORAL_ERROR_NONE;
+}
+
+static void check_object_new_condition_error_on_invalid_value(void **state) {
+    coral_error = CORAL_ERROR_NONE;
+    struct coral_class *class = NULL;
+    assert_true(coral_lock_class(&class));
+    assert_false(coral_lock_new_condition((struct coral_lock *)class,
+            (void*)1));
+    assert_int_equal(CORAL_ERROR_INVALID_VALUE, coral_error);
+    coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
 
@@ -459,26 +514,31 @@ int main(int argc, char *argv[]) {
             cmocka_unit_test(check_object_init),
             cmocka_unit_test(check_object_hash_code_error_on_null_object_ptr),
             cmocka_unit_test(check_object_hash_code_error_on_null_argument_ptr),
+            cmocka_unit_test(check_object_hash_code_error_on_invalid_value),
             cmocka_unit_test(check_object_hash_code_error_on_object_uninitialized),
             cmocka_unit_test(check_object_hash_code),
             cmocka_unit_test(check_object_is_equal_error_on_null_object_ptr),
             cmocka_unit_test(check_object_is_equal_error_on_null_argument_ptr),
+            cmocka_unit_test(check_object_is_equal_invalid_value),
             cmocka_unit_test(check_object_is_equal),
             cmocka_unit_test(check_object_copy_error_on_object_is_unavailable),
-            cmocka_unit_test(check_object_lock_retain_error_on_object_ptr),
-            cmocka_unit_test(check_object_lock_retain_error_on_object_unavailable),
-            cmocka_unit_test(check_object_lock_release_error_on_object_ptr),
-            cmocka_unit_test(check_object_lock_release_error_on_object_unavailable),
-            cmocka_unit_test(check_object_lock_autorelease_error_on_object_ptr),
-            cmocka_unit_test(check_object_lock_autorelease_error_on_object_unavailable),
+            cmocka_unit_test(check_object_retain_error_on_null_object_ptr),
+            cmocka_unit_test(check_object_retain_error_on_object_unavailable),
+            cmocka_unit_test(check_object_release_error_on_null_object_ptr),
+            cmocka_unit_test(check_object_release_error_on_object_unavailable),
+            cmocka_unit_test(check_object_autorelease_error_on_null_object_ptr),
+            cmocka_unit_test(check_object_autorelease_error_on_object_unavailable),
             cmocka_unit_test(check_object_lock_error_on_null_object_ptr),
+            cmocka_unit_test(check_object_lock_error_on_invalid_value),
             cmocka_unit_test(check_object_lock_error_on_object_is_uninitialized),
             cmocka_unit_test(check_object_lock),
             cmocka_unit_test(check_object_unlock_error_on_null_object_ptr),
             cmocka_unit_test(check_object_unlock_error_on_object_is_uninitialized),
+            cmocka_unit_test(check_object_unlock_error_on_invalid_value),
             cmocka_unit_test(check_object_unlock_error_on_object_unavailable),
             cmocka_unit_test(check_object_unlock),
             cmocka_unit_test(check_object_new_condition_error_on_null_object_ptr),
+            cmocka_unit_test(check_object_new_condition_error_on_invalid_value),
             cmocka_unit_test(check_object_new_condition_error_on_null_argument_ptr),
             cmocka_unit_test(check_object_new_condition),
     };

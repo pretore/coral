@@ -26,6 +26,8 @@ bool coral$weak_reference$init(struct coral$weak_reference *object,
 
 /**
  * @brief Initialize the weak reference instance.
+ * <p>The actual <u>weak reference is not deallocated</u> since it may have
+ * been embedded in a larger structure.</p>
  * @param [in] object weak reference to be initialized.
  * @param [in] instance for which we will be a weak reference.
  * @return On success true, otherwise false if an error has occurred.
