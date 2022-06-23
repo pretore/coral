@@ -168,6 +168,7 @@ bool coral_context_hash_code(struct coral_context *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $context_hash_code,
             &args);
 }
@@ -187,6 +188,7 @@ bool coral_context_is_equal(void *object, void *other, bool *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $context_is_equal,
             &args);
 }
@@ -221,6 +223,7 @@ bool coral_context_get(struct coral_context *object, void **out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $context_get,
             &args);
 }

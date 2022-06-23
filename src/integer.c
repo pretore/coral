@@ -860,6 +860,7 @@ bool coral_integer_hash_code(struct coral_integer *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $integer_hash_code,
             &args);
 }
@@ -881,6 +882,7 @@ bool coral_integer_is_equal(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $integer_is_equal,
             &args);
 }
@@ -912,6 +914,7 @@ bool coral_integer_add(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_add,
             &args);
 }
@@ -931,6 +934,7 @@ bool coral_integer_subtract(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_subtract,
             &args);
 }
@@ -950,6 +954,7 @@ bool coral_integer_multiply(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_multiply,
             &args);
 }
@@ -971,6 +976,7 @@ bool coral_integer_divide(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_divide,
             &args);
 }
@@ -982,6 +988,7 @@ bool coral_integer_absolute(struct coral_integer *object) {
     }
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_absolute,
             NULL);
 }
@@ -993,6 +1000,7 @@ bool coral_integer_negate(struct coral_integer *object) {
     }
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_negate,
             NULL);
 }
@@ -1014,6 +1022,7 @@ bool coral_integer_compare(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $integer_compare,
             &args);
 }
@@ -1033,6 +1042,7 @@ bool coral_integer_and(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_and,
             &args);
 }
@@ -1052,6 +1062,7 @@ bool coral_integer_or(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_or,
             &args);
 }
@@ -1063,6 +1074,7 @@ bool coral_integer_not(struct coral_integer *object) {
     }
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_not,
             NULL);
 }
@@ -1082,6 +1094,7 @@ bool coral_integer_xor(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_xor,
             &args);
 }
@@ -1100,6 +1113,7 @@ bool coral_integer_shift_left(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_shift_left,
             &args);
 }
@@ -1118,6 +1132,7 @@ bool coral_integer_shift_right(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_shift_right,
             &args);
 }
@@ -1137,6 +1152,7 @@ bool coral_integer_length(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $integer_length,
             &args);
 }
@@ -1156,6 +1172,7 @@ bool coral_integer_count(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $integer_count,
             &args);
 }
@@ -1177,6 +1194,7 @@ bool coral_integer_get(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t)$integer_get,
             &args);
 }
@@ -1194,6 +1212,7 @@ bool coral_integer_set(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $integer_set,
             &args);
 }
@@ -1217,6 +1236,7 @@ bool coral_integer_find(struct coral_integer *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $integer_find,
             &args);
 }

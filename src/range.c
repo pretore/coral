@@ -486,6 +486,7 @@ bool coral_range_hash_code(struct coral_range *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $range_hash_code,
             &args);
 }
@@ -511,6 +512,7 @@ bool coral_range_is_equal(struct coral_range *object,
            && *out
            && coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $range_is_equal,
             &args);
 }
@@ -545,6 +547,7 @@ bool coral_range_get_first(struct coral_range *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $range_get_first,
             &args);
 }
@@ -563,6 +566,7 @@ bool coral_range_get_last(struct coral_range *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $range_get_last,
             &args);
 }
@@ -581,6 +585,7 @@ bool coral_range_get_minimum(struct coral_range *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $range_get_minimum,
             &args);
 }
@@ -599,6 +604,7 @@ bool coral_range_get_maximum(struct coral_range *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $range_get_maximum,
             &args);
 }
@@ -619,6 +625,7 @@ bool coral_range_is_inclusive(struct coral_range *object, const size_t value,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $range_is_inclusive,
             &args);
 }
@@ -639,6 +646,7 @@ bool coral_range_get_next(struct coral_range *object, size_t current,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $range_get_next,
             &args);
 }
@@ -659,6 +667,7 @@ bool coral_range_get_prev(struct coral_range *object, size_t current,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $range_get_prev,
             &args);
 }

@@ -149,6 +149,7 @@ static bool $reference_hash_code(void *this,
         return false;
     }
     result = coral_object_dispatch(data->reference.object,
+                                   true,
                                    hash_code,
                                    args);
     if (!result) {
@@ -182,6 +183,7 @@ static bool $reference_is_equal(void *this,
     struct coral_reference *other = args->other;
     args->other = other->reference.object;
     bool result = coral_object_dispatch(object->reference.object,
+                                        true,
                                         is_equal,
                                         args);
     if (!result) {
@@ -261,6 +263,7 @@ bool coral_reference_hash_code(struct coral_reference *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $reference_hash_code,
             &args);
 }
@@ -282,6 +285,7 @@ bool coral_reference_is_equal(struct coral_reference *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $reference_is_equal,
             &args);
 }
@@ -317,6 +321,7 @@ bool coral_reference_get(struct coral_reference *object, void **out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $reference_get,
             &args);
 }

@@ -215,6 +215,7 @@ bool coral_class_hash_code(struct coral_class *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $class_hash_code,
             &args);
 }
@@ -238,6 +239,7 @@ bool coral_class_is_equal(struct coral_class *object, void *other, bool *out) {
            && *out
            && coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $class_is_equal,
             &args);
 }
@@ -279,6 +281,7 @@ bool coral_class_method_add(struct coral_class *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $class_method_add,
             &args);
 }
@@ -301,6 +304,7 @@ bool coral_class_method_remove(struct coral_class *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $class_method_remove,
             &args);
 }
@@ -325,6 +329,7 @@ bool coral_class_method_get(struct coral_class *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $class_method_get,
             &args);
 }

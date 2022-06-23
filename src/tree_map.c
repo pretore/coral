@@ -482,7 +482,11 @@ bool coral_tree_map_is_equal(struct coral_tree_map *object,
            && *out
            && coral_object_instance_of(other, $class, out)
            && *out
-           && coral_object_dispatch(object, is_equal, &args);
+           && coral_object_dispatch(
+                   object,
+                   true,
+                   is_equal,
+                   &args);
 }
 
 bool coral_tree_map_copy(struct coral_tree_map *object,
@@ -516,6 +520,7 @@ bool coral_tree_map_get_count(struct coral_tree_map *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $tree_map_get_count,
             &args);
 }
@@ -539,6 +544,7 @@ bool coral_tree_map_insert(struct coral_tree_map *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $tree_map_insert,
             &args);
 }
@@ -557,6 +563,7 @@ bool coral_tree_map_delete(struct coral_tree_map *object, const void *key) {
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $tree_map_delete,
             &args);
 }
@@ -577,6 +584,7 @@ bool coral_tree_map_contains(struct coral_tree_map *object, const void *key,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $tree_map_contains,
             &args);
 }
@@ -597,6 +605,7 @@ bool coral_tree_map_get(struct coral_tree_map *object, const void *key,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $tree_map_get,
             &args);
 }
@@ -620,6 +629,7 @@ bool coral_tree_map_set(struct coral_tree_map *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $tree_map_set,
             &args);
 }

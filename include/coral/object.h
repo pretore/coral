@@ -155,6 +155,8 @@ typedef bool (*coral_invokable_t)(void *this, void *data, void *args);
  * would be done through this method so that services such as memory management
  * can be performed.</p>
  * @param [in] object instance.
+ * @param [in] readonly set to true if calling <b>function</b> will not change
+ * the state of the object, otherwise use false.
  * @param [in] function perform the desired operations.
  * @param [in, out] args used by function to modify object and to provide
  * results.
@@ -163,12 +165,17 @@ typedef bool (*coral_invokable_t)(void *this, void *data, void *args);
  * instance.
  * @note If object or function is <i>NULL</i> we will call abort(3).
  */
-bool coral_object_invoke(void *object, coral_invokable_t function, void *args);
+bool coral_object_invoke(void *object,
+                         bool readonly,
+                         coral_invokable_t function,
+                         void *args);
 
 /**
  * @brief Lookup method on object and then invoke it.
  * @param [in] object instance.
  * @param [in] method name of the function.
+ * @param [in] readonly set to true if calling <b>method</b> will not change
+ * the state of the object, otherwise use false.
  * @param [in, out] args used by function to modify object and to provide
  * results.
  * @return On success true, otherwise false if an error has occurred.
@@ -177,6 +184,7 @@ bool coral_object_invoke(void *object, coral_invokable_t function, void *args);
  * instance.
  * @note If object or method is <i>NULL</i> we will call abort(3).
  */
-bool coral_object_dispatch(void *object, const char *method, void *args);
+bool coral_object_dispatch(void *object, bool readonly, const char *method,
+                           void *args);
 
 #endif /* _CORAL_OBJECT_H_ */

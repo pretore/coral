@@ -159,8 +159,7 @@ bool coral_clear_weak_reference(struct coral_weak_reference **ref);
  * <i>NULL</i>.
  * @throws CORAL_ERROR_INVALID_VALUE if maximum is zero or if state value is
  * too large then the state value will be reset.
- * @throws CORAL_ERROR_SYSCALL_FAILED if nanosleep(2) encountered an
- * error.
+ * @throws CORAL_ERROR_SYSCALL_FAILED if nanosleep(2) encountered an error.
  */
 bool coral_exponential_usleep(uint8_t *state, uint32_t maximum);
 

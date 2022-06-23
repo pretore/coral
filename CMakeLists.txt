@@ -46,6 +46,7 @@ set(SOURCES
         src/private/lock_condition.h
         src/private/object.h
         src/private/range.h
+        src/private/rwlock.c
         src/private/rwlock.h
         src/private/red_black_tree.h
         src/private/reference.h

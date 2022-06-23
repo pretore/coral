@@ -705,7 +705,7 @@ static bool $array_is_equal(void *this,
         if (q != w &&
             (NULL == q
              || NULL == w
-             || !coral_object_dispatch(q, is_equal, &args_)
+             || !coral_object_dispatch(q, true, is_equal, &args_)
              || (CORAL_ERROR_METHOD_NOT_FOUND == coral_error
                  && !coral_object_is_equal(q, w, args->out)))) {
             return false;
@@ -1088,7 +1088,11 @@ bool coral_array_is_equal(struct coral_array *object,
            && *out
            && coral_object_instance_of(other, $class, out)
            && *out
-           && coral_object_dispatch(object, is_equal, &args);
+           && coral_object_invoke(
+                   object,
+                   true,
+                   (coral_invokable_t) $array_is_equal,
+                   &args);
 }
 
 bool coral_array_copy(struct coral_array *object, struct coral_array **out) {
@@ -1121,6 +1125,7 @@ bool coral_array_get_capacity(struct coral_array *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $array_get_capacity,
             &args);
 }
@@ -1135,6 +1140,7 @@ bool coral_array_set_capacity(struct coral_array *object, size_t capacity) {
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $array_set_capacity,
             &args);
 }
@@ -1153,6 +1159,7 @@ bool coral_array_get_count(struct coral_array *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $array_get_count,
             &args);
 }
@@ -1167,6 +1174,7 @@ bool coral_array_set_count(struct coral_array *object, size_t count) {
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $array_set_count,
             &args);
 }
@@ -1186,6 +1194,7 @@ bool coral_array_get(struct coral_array *object, size_t at, void **out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $array_get,
             &args);
 }
@@ -1201,6 +1210,7 @@ bool coral_array_set(struct coral_array *object, size_t at, void *instance) {
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $array_set,
             &args);
 }
@@ -1215,6 +1225,7 @@ bool coral_array_add(struct coral_array *object, void *instance) {
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $array_add,
             &args);
 }
@@ -1226,6 +1237,7 @@ bool coral_array_remove(struct coral_array *object) {
     }
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $array_remove,
             NULL);
 }
@@ -1243,6 +1255,7 @@ bool coral_array_insert(struct coral_array *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $array_insert,
             &args);
 }
@@ -1257,6 +1270,7 @@ bool coral_array_delete(struct coral_array *object, size_t at) {
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $array_delete,
             &args);
 }
@@ -1279,6 +1293,7 @@ bool coral_array_sort(struct coral_array *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $array_sort,
             &args);
 }
@@ -1346,6 +1361,7 @@ bool coral_array_find(struct coral_array *object,
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $coral_array_find,
             &args);
 }

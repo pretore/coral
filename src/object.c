@@ -7,10 +7,15 @@
 #include "private/coral.h"
 #include "private/object.h"
 #include "private/class.h"
-#include "private/lock.h"
+#include "private/rwlock.h"
 #include "test/cmocka.h"
 
 #pragma mark private -
+
+static bool $is_object(struct coral_object *object);
+
+static struct coral_class *$class;
+
 #pragma mark + dispatch methods
 
 const char *destroy = "destroy";
@@ -27,8 +32,6 @@ static bool $object_hash_code(void *this,
 static bool $object_is_equal(void *this,
                              void *data,
                              struct is_equal_args *args);
-
-static struct coral_class *$class;
 
 __attribute__((constructor(CORAL_CLASS_LOAD_PRIORITY_OBJECT)))
 static void $on_load() {
@@ -57,6 +60,16 @@ static void $on_unload() {
     coral_autorelease_pool_drain();
 }
 
+struct coral_object {
+    struct coral_class *class;
+    atomic_size_t ref_count;
+    void *copy_of; // TODO: atomic variable ...
+    struct coral$rwlock lock;
+    size_t size;
+    size_t checksum;
+    // FIXME: Implement observer pattern for events ...
+};
+
 struct coral_object *coral$object_from(void *object) {
     coral_required(object);
     const char *object_ = object;
@@ -67,6 +80,41 @@ void *coral$object_to(struct coral_object *object) {
     coral_required(object);
     const char *object_ = (const char *) object;
     return (void *) (object_ + sizeof(struct coral_object));
+}
+
+bool coral$object$get_class(struct coral_object *object,
+                            struct coral_class **out) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    if (!$is_object(object)) {
+        coral_error = CORAL_ERROR_INVALID_VALUE;
+        return false;
+    }
+    *out = object->class;
+    return true;
+}
+
+bool coral$object$get_ref_count(struct coral_object *object, size_t *out) {
+    if (!object) {
+        coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
+        return false;
+    }
+    if (!out) {
+        coral_error = CORAL_ERROR_ARGUMENT_PTR_IS_NULL;
+        return false;
+    }
+    if (!$is_object(object)) {
+        coral_error = CORAL_ERROR_INVALID_VALUE;
+        return false;
+    }
+    *out = coral$atomic_load(&object->ref_count);
+    return true;
 }
 
 static struct coral_object *coral$object_resolve(struct coral_object *object) {
@@ -98,22 +146,24 @@ static bool $object_alloc(const size_t size, void **out) {
 static bool $object_init(void *object, struct coral_class *class) {
     coral_required(object);
     struct coral_object *object_ = coral$object_from(object);
-    if (!object_->class
-        && !object_->checksum
-        && coral$atomic_compare_exchange(&object_->ref_count, 0, 1)) {
-        if (!class) {
-            class = $class;
-        }
-        object_->class = coral$object_to(coral$object_resolve(
-                coral$object_from(class)));
-        object_->checksum = (size_t) object_
-                            ^ (size_t) object_->class
-                            ^ (size_t) object_->size;
-        coral$autorelease_pool$add(object);
-        return true;
+    if (object_->class
+        || object_->checksum
+        || !coral$rwlock$init(&object_->lock)
+        || !coral$atomic_compare_exchange(&object_->ref_count, 0, 1)) {
+        coral_error = CORAL_ERROR_INITIALIZATION_FAILED;
+        return false;
     }
-    coral_error = CORAL_ERROR_INITIALIZATION_FAILED;
-    return false;
+    if (!class) {
+        class = $class;
+    }
+    object_->class = coral$object_to(
+            coral$object_resolve(
+                    coral$object_from(class)));
+    object_->checksum = (size_t) object_
+                        ^ (size_t) object_->class
+                        ^ (size_t) object_->size;
+    coral$autorelease_pool$add(object);
+    return true;
 }
 
 static bool $is_object(struct coral_object *object) {
@@ -219,7 +269,10 @@ void coral$object_post_notification(void *object, const char *notification) {
 
 #pragma mark public -
 
-bool coral_object_invoke(void *object, coral_invokable_t function, void *args) {
+bool coral_object_invoke(void *object,
+                         bool readonly,
+                         coral_invokable_t function,
+                         void *args) {
     coral_required(object);
     coral_required(function);
     struct coral_object *object_ = coral$object_from(object);
@@ -227,17 +280,23 @@ bool coral_object_invoke(void *object, coral_invokable_t function, void *args) {
         coral_error = CORAL_ERROR_OBJECT_IS_UNINITIALIZED;
         return false;
     }
-    void *data = coral$object_to(coral$object_resolve(object_));
+    object_ = coral$object_resolve(object_);
+    void *data = coral$object_to(object_);
     coral$autorelease_pool$start();
+    coral_required_true(readonly
+        ? coral$rwlock$read_lock(&object_->lock)
+        : coral$rwlock$write_lock(&object_->lock));
     const bool result = function(object, data, args);
+    coral_required_true(coral$rwlock$unlock(&object_->lock));
     coral$autorelease_pool$end();
     return result;
 }
 
-bool coral_object_dispatch(void *object, const char *method, void *args) {
+bool coral_object_dispatch(void *object, bool readonly, const char *method,
+                           void *args) {
     coral_invokable_t function;
     return $object_get_dispatch(object, method, &function)
-           && coral_object_invoke(object, function, args);
+           && coral_object_invoke(object, readonly, function, args);
 }
 
 bool coral_object_class(struct coral_class **out) {
@@ -281,13 +340,17 @@ bool coral_object_destroy(void *object) {
     }
     struct coral_object *object_ = coral$object_from(object);
     coral$atomic_store(&object_->ref_count, 0);
-    if (object_->copy_of) {
-        coral_required_true($object_release(object_->copy_of, NULL, NULL));
+    if ($is_object(object_)) {
+        coral$rwlock$invalidate(&object_->lock);
+        if (object_->copy_of) {
+            coral_required_true($object_release(object_->copy_of, NULL, NULL));
+        }
+        if (destroy_func) {
+            coral_required_true(destroy_func(object, object, NULL));
+        }
+        coral$object_post_notification(object,
+                                       CORAL_NOTIFICATION_OBJECT_DESTROYED);
     }
-    if (destroy_func) {
-        coral_required_true(destroy_func(object, object, NULL));
-    }
-    coral$object_post_notification(object, CORAL_NOTIFICATION_OBJECT_DESTROYED);
     free(object_);
     return true;
 }
@@ -321,6 +384,7 @@ bool coral_object_hash_code(void *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $object_hash_code,
             &args);
 }
@@ -340,6 +404,7 @@ bool coral_object_is_equal(void *object, void *other, bool *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $object_is_equal,
             &args);
 }
@@ -395,7 +460,11 @@ bool coral_object_retain(void *object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    return coral_object_invoke(object, $object_retain, NULL);
+    return coral_object_invoke(
+            object,
+            true,
+            $object_retain,
+            NULL);
 }
 
 bool coral_object_release(void *object) {
@@ -403,7 +472,11 @@ bool coral_object_release(void *object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    return coral_object_invoke(object, $object_release, NULL);
+    return coral_object_invoke(
+            object,
+            true,
+            $object_release,
+            NULL);
 }
 
 bool coral_object_autorelease(void *object) {
@@ -411,5 +484,9 @@ bool coral_object_autorelease(void *object) {
         coral_error = CORAL_ERROR_OBJECT_PTR_IS_NULL;
         return false;
     }
-    return coral_object_invoke(object, $object_autorelease, NULL);
+    return coral_object_invoke(
+            object,
+            true,
+            $object_autorelease,
+            NULL);
 }

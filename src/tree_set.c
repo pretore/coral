@@ -597,7 +597,11 @@ bool coral_tree_set_is_equal(struct coral_tree_set *object,
            && *out
            && coral_object_instance_of(other, $class, out)
            && *out
-           && coral_object_dispatch(object, is_equal, &args);
+           && coral_object_dispatch(
+                   object,
+                   true,
+                   is_equal,
+                   &args);
 }
 
 bool coral_tree_set_copy(struct coral_tree_set *object,
@@ -631,6 +635,7 @@ bool coral_tree_set_get_count(struct coral_tree_set *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $tree_set_get_count,
             &args);
 }
@@ -649,6 +654,7 @@ bool coral_tree_set_insert(struct coral_tree_set *object, void *instance) {
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $tree_set_insert,
             &args);
 }
@@ -667,6 +673,7 @@ bool coral_tree_set_delete(struct coral_tree_set *object, void *instance) {
     };
     return coral_object_invoke(
             object,
+            false,
             (coral_invokable_t) $tree_set_delete,
             &args);
 }
@@ -687,6 +694,7 @@ bool coral_tree_set_contains(struct coral_tree_set *object, void *instance,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $tree_set_contains,
             &args);
 }
@@ -705,6 +713,7 @@ bool coral_tree_set_get_first(struct coral_tree_set *object, void **out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $tree_set_get_first,
             &args);
 }
@@ -723,6 +732,7 @@ bool coral_tree_set_get_last(struct coral_tree_set *object, void **out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $tree_set_get_last,
             &args);
 }
@@ -743,6 +753,7 @@ bool coral_tree_set_get_next(struct coral_tree_set *object, void *instance,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $tree_set_get_next,
             &args);
 }
@@ -763,6 +774,7 @@ bool coral_tree_set_get_prev(struct coral_tree_set *object, void *instance,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $tree_set_get_prev,
             &args);
 }

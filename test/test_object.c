@@ -57,13 +57,12 @@ static void check_object_init_error_on_null_argument_ptr(void **state) {
 }
 
 static void check_object_init_error_on_initialization(void **state) {
+    coral_error = CORAL_ERROR_NONE;
     void *instance = NULL;
     assert_true(coral_object_alloc(0, (void **) &instance));
-    struct coral_object *object = coral$object_from(instance);
-    coral$atomic_store(&object->ref_count, 1);
     struct coral_class *class = NULL;
-    coral_required_true(coral_object_class(&class));
-    coral_error = CORAL_ERROR_NONE;
+    assert_true(coral_object_class(&class));
+    assert_true(coral_object_init(instance, class));
     assert_false(coral_object_init(instance, class));
     assert_int_equal(CORAL_ERROR_INITIALIZATION_FAILED, coral_error);
     assert_true(coral_object_destroy(instance));
@@ -74,7 +73,6 @@ static void check_object_init_error_on_initialization(void **state) {
 static void check_object_init(void **state) {
     void *instance = NULL;
     assert_true(coral_object_alloc(0, (void **) &instance));
-    struct coral_object *object = coral$object_from(instance);
     struct coral_class *class = NULL;
     coral_required_true(coral_object_class(&class));
     coral_error = CORAL_ERROR_NONE;
@@ -153,11 +151,15 @@ static void check_object_retain_and_release(void **state) {
     struct coral_class *class = NULL;
     assert_true(coral_object_class(&class));
     assert_true(coral_object_init(object, class));
-    assert_int_equal(1, coral$atomic_load(&object_->ref_count));
+    size_t count;
+    assert_true(coral$object$get_ref_count(object_, &count));
+    assert_int_equal(1, count);
     assert_true(coral_object_retain(object));
-    assert_int_equal(2, coral$atomic_load(&object_->ref_count));
+    assert_true(coral$object$get_ref_count(object_, &count));
+    assert_int_equal(2, count);
     assert_true(coral_object_release(object));
-    assert_int_equal(1, coral$atomic_load(&object_->ref_count));
+    assert_true(coral$object$get_ref_count(object_, &count));
+    assert_int_equal(1, count);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
 }
@@ -222,7 +224,7 @@ check_object_dispatch_is_equal_error_on_object_uninitialized(void **state) {
             .out = &result
     };
     args.other = i;
-    assert_false(coral_object_dispatch(i, is_equal, &args));
+    assert_false(coral_object_dispatch(i, true, is_equal, &args));
     assert_int_equal(CORAL_ERROR_OBJECT_IS_UNINITIALIZED, coral_error);
     assert_true(coral_object_destroy(i));
     coral_error = CORAL_ERROR_NONE;
@@ -242,16 +244,16 @@ static void check_object_dispatch_is_equal(void **state) {
             .out = &result
     };
     args.other = o;
-    assert_true(coral_object_dispatch(i, is_equal, &args));
+    assert_true(coral_object_dispatch(i, true, is_equal, &args));
     assert_false(result);
     args.other = i;
-    assert_true(coral_object_dispatch(i, is_equal, &args));
+    assert_true(coral_object_dispatch(i, true, is_equal, &args));
     assert_true(result);
     args.other = o;
-    assert_true(coral_object_dispatch(o, is_equal, &args));
+    assert_true(coral_object_dispatch(o, true, is_equal, &args));
     assert_true(result);
     args.other = i;
-    assert_true(coral_object_dispatch(o, is_equal, &args));
+    assert_true(coral_object_dispatch(o, true, is_equal, &args));
     assert_false(result);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;
@@ -307,7 +309,7 @@ check_object_dispatch_hash_code_error_on_object_uninitialized(void **state) {
     struct hash_code_args args = {
             .out = &result
     };
-    assert_false(coral_object_dispatch(i, hash_code, &args));
+    assert_false(coral_object_dispatch(i, true, hash_code, &args));
     assert_int_equal(CORAL_ERROR_OBJECT_IS_UNINITIALIZED, coral_error);
     assert_true(coral_object_destroy(i));
     coral_error = CORAL_ERROR_NONE;
@@ -324,7 +326,7 @@ static void check_object_dispatch_hash_code(void **state) {
     struct hash_code_args args = {
             .out = &result
     };
-    assert_true(coral_object_dispatch(i, hash_code, &args));
+    assert_true(coral_object_dispatch(i, true, hash_code, &args));
     assert_int_not_equal(result, 0);
     coral_autorelease_pool_drain();
     coral_error = CORAL_ERROR_NONE;

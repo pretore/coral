@@ -277,6 +277,7 @@ bool coral_lock_hash_code(struct coral_lock *object, size_t *out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $lock_hash_code,
             &args);
 }
@@ -298,6 +299,7 @@ bool coral_lock_is_equal(struct coral_lock *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $lock_is_equal,
             &args);
 }
@@ -321,6 +323,7 @@ bool coral_lock_lock(struct coral_lock *object) {
     }
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $lock_lock,
             NULL);
 }
@@ -332,6 +335,7 @@ bool coral_lock_unlock(struct coral_lock *object) {
     }
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $lock_unlock,
             NULL);
 }
@@ -351,6 +355,7 @@ bool coral_lock_new_condition(struct coral_lock *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $lock_new_condition,
             &args);
 }

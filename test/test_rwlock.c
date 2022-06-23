@@ -399,6 +399,7 @@ static void check_object_read_lock_error_on_object_unavailable(void **state) {
     assert_true(coral_rwlock_alloc(&object));
     assert_true(coral_rwlock_init(object));
     pthread_rwlock_rdlock_is_overridden = true;
+    will_return(__wrap_pthread_rwlock_rdlock, 0); /* coral_object_invoke */
     will_return(__wrap_pthread_rwlock_rdlock, EDEADLK);
     assert_false(coral_rwlock_read_lock(object));
     assert_int_equal(CORAL_ERROR_OBJECT_UNAVAILABLE, coral_error);
@@ -424,6 +425,7 @@ static void check_object_read_lock(void **state) {
     assert_true(coral_rwlock_alloc(&object));
     assert_true(coral_rwlock_init(object));
     pthread_rwlock_rdlock_is_overridden = true;
+    will_return(__wrap_pthread_rwlock_rdlock, 0); /* coral_object_invoke */
     will_return(__wrap_pthread_rwlock_rdlock, 0);
     assert_true(coral_rwlock_read_lock(object));
     pthread_rwlock_rdlock_is_overridden = false;

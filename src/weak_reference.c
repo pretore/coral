@@ -141,6 +141,7 @@ static bool $weak_reference_hash_code(void *this,
                                                  $class,
                                                  &result));
     result = coral_object_dispatch(data->weak_reference.object,
+                                        true,
                                         hash_code,
                                         args);
     if (!result) {
@@ -174,6 +175,7 @@ static bool $weak_reference_is_equal(void *this,
     struct coral_weak_reference *other = args->other;
     args->other = other->weak_reference.object;
     bool result = coral_object_dispatch(object->weak_reference.object,
+                                        true,
                                         is_equal,
                                         args);
     if (!result) {
@@ -261,6 +263,7 @@ bool coral_weak_reference_hash_code(struct coral_weak_reference *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $weak_reference_hash_code,
             &args);
 }
@@ -282,6 +285,7 @@ bool coral_weak_reference_is_equal(struct coral_weak_reference *object,
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $weak_reference_is_equal,
             &args);
 }
@@ -317,6 +321,7 @@ bool coral_weak_reference_get(struct coral_weak_reference *object, void **out) {
     };
     return coral_object_invoke(
             object,
+            true,
             (coral_invokable_t) $weak_reference_get,
             &args);
 }

@@ -11,19 +11,16 @@
 #define CORAL_CLASS_LOAD_PRIORITY_OBJECT \
     (1 + CORAL_CLASS_LOAD_PRIORITY_CLASS)
 
-struct coral_object {
-    struct coral_class *class;
-    atomic_size_t ref_count;
-    struct coral_object *copy_of;
-    size_t size;
-    size_t checksum;
-    // FIXME: Implement observer pattern for events ...
-};
+struct coral_object;
 
 struct coral_object *coral$object_from(void *object);
 
 void *coral$object_to(struct coral_object *object);
 
+bool coral$object$get_class(struct coral_object *object,
+                            struct coral_class **out);
+
+bool coral$object$get_ref_count(struct coral_object *object, size_t *out);
 
 void
 coral$object_add_observer(struct coral_object *object, void *observer,
